@@ -157,6 +157,24 @@ npm run test:integration  # calls the real keyless demo endpoint
 npm run check:generated   # types match openapi.yaml
 ```
 
+## TimTim.Live Developer Tools
+
+Open-source tools for connecting websites, apps and platforms to TimTim.Live.
+
+### What is open source
+
+SDKs, widgets, adapters, examples and public API specifications.
+
+### What is not included
+
+The hosted TimTim.Live Event API implementation, production databases, ticketing backend, checkout systems, attribution systems, payouts, fraud systems, customer data, infrastructure and proprietary business logic are not part of this repository.
+
+These tools connect to the hosted TimTim.Live API at:
+
+https://api.timtim.live
+
+Open-source licenses for client software do not grant ownership of TimTim.Live event data, API services, commercial rights, certification marks or trademarks.
+
 ## License
 
 [MIT](LICENSE) © 2026 timtim-live. Using the TimTim.Live API is covered by the Partner Terms: https://timtim.live/partners/terms
