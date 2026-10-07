@@ -1,0 +1,67 @@
+{
+  "name": "@timtim-live/events",
+  "version": "0.1.0",
+  "description": "Find and show live events from TimTim.Live in any JavaScript app. Zero dependencies. Developer Preview.",
+  "license": "MIT",
+  "author": "timtim-live",
+  "homepage": "https://timtim.live/developers",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/timtimlive/timtim-live-events.git",
+    "directory": "packages/events-js"
+  },
+  "bugs": {
+    "url": "https://github.com/timtimlive/timtim-live-events/issues"
+  },
+  "keywords": [
+    "event api",
+    "events api",
+    "live events",
+    "events widget",
+    "event listings",
+    "concerts",
+    "festivals",
+    "tickets",
+    "timtim",
+    "timtim.live",
+    "sdk",
+    "webhooks"
+  ],
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      }
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist",
+    "openapi.yaml",
+    "README.md",
+    "LICENSE"
+  ],
+  "sideEffects": false,
+  "engines": {
+    "node": ">=18"
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
+  "scripts": {
+    "generate": "node scripts/generate-types.mjs",
+    "check:generated": "node scripts/generate-types.mjs --check",
+    "build": "tsup",
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  }
+}

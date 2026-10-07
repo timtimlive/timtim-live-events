@@ -1,0 +1,58 @@
+{
+  "name": "timtim-live-events-monorepo",
+  "private": true,
+  "type": "module",
+  "version": "0.1.0",
+  "description": "TimTim.Live Event SDK (Developer Preview): JavaScript client, web component and React components for the TimTim.Live events API.",
+  "license": "MIT",
+  "homepage": "https://timtim.live/developers",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/timtimlive/timtim-live-events.git"
+  },
+  "workspaces": [
+    "packages/events-js",
+    "packages/web-component",
+    "packages/react",
+    "examples/javascript",
+    "examples/html",
+    "examples/react",
+    "examples/nextjs"
+  ],
+  "engines": {
+    "node": ">=20.19"
+  },
+  "scripts": {
+    "build": "npm run build -w @timtim-live/events && npm run build -w @timtim-live/web-component && npm run build -w @timtim-live/react",
+    "generate": "npm run generate -w @timtim-live/events",
+    "check:generated": "npm run check:generated -w @timtim-live/events",
+    "lint": "eslint .",
+    "typecheck": "npm run typecheck -w @timtim-live/events && npm run typecheck -w @timtim-live/web-component && npm run typecheck -w @timtim-live/react && tsc --noEmit -p examples/react/tsconfig.json",
+    "test": "vitest run",
+    "test:integration": "vitest run --config vitest.integration.config.ts",
+    "smoke:dist": "node scripts/smoke-dist.mjs",
+    "example:node": "npm run start -w examples-javascript",
+    "check:contract": "node scripts/check-contract.mjs"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.0",
+    "@testing-library/dom": "^10.4.2",
+    "@testing-library/react": "^16.3.3",
+    "@types/node": "^22.19.0",
+    "@types/react": "^19.2.0",
+    "@types/react-dom": "^19.2.0",
+    "ajv": "^8.20.0",
+    "ajv-formats": "^3.0.1",
+    "eslint": "^9.39.0",
+    "globals": "^16.5.0",
+    "happy-dom": "^20.14.5",
+    "openapi-typescript": "^7.13.0",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "tsup": "^8.5.1",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.71.1",
+    "vitest": "^4.1.11",
+    "yaml": "^2.9.1"
+  }
+}

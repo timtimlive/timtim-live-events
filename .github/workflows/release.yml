@@ -1,0 +1,77 @@
+name: Release to npm
+
+# Publishes @timtim-live/events, @timtim-live/web-component and @timtim-live/react
+# when a GitHub release is published — and ONLY if the release tag is exactly
+# v<version> of all three packages. Otherwise it does nothing.
+#
+# Authentication is npm Trusted Publishing (OIDC): no NPM_TOKEN secret exists.
+# Before the first release, on npmjs.com, each package needs a trusted publisher
+# set to: repository timtimlive/timtim-live-events, workflow release.yml,
+# environment npm.
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    name: Check the tag and test
+    runs-on: ubuntu-latest
+    outputs:
+      publish: ${{ steps.guard.outputs.publish }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Tag must equal v<package version>
+        id: guard
+        env:
+          TAG: ${{ github.event.release.tag_name }}
+        run: |
+          publish=true
+          for p in packages/events-js packages/web-component packages/react; do
+            v="$(node -p "require('./$p/package.json').version")"
+            if [ "v$v" != "$TAG" ]; then
+              echo "::notice::Release tag '$TAG' does not match $p version 'v$v'. Nothing will be published."
+              publish=false
+            fi
+          done
+          echo "publish=$publish" >> "$GITHUB_OUTPUT"
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        if: steps.guard.outputs.publish == 'true'
+        with:
+          node-version: 22
+          cache: npm
+      - if: steps.guard.outputs.publish == 'true'
+        run: npm ci
+      - if: steps.guard.outputs.publish == 'true'
+        run: npm run lint && npm run build && npm run typecheck && npm test && npm run check:generated
+
+  publish:
+    name: Publish with provenance
+    needs: verify
+    if: needs.verify.outputs.publish == 'true'
+    runs-on: ubuntu-latest
+    environment: npm
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          # npm 11.5.1+ (bundled with Node 24) is needed for Trusted Publishing.
+          node-version: 24
+          registry-url: https://registry.npmjs.org
+      - run: npm ci
+      - run: npm run build
+      - name: Publish (events first; the others depend on it)
+        run: |
+          npm publish --provenance --access public -w @timtim-live/events
+          npm publish --provenance --access public -w @timtim-live/web-component
+          npm publish --provenance --access public -w @timtim-live/react

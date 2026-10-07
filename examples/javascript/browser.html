@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>TimTim.Live events — SDK in the browser</title>
+    <style>
+      body { font-family: system-ui, sans-serif; background: #fff; margin: 0 auto; max-width: 720px; padding: 24px 16px; color: #0f172a; }
+      li { margin-bottom: 12px; }
+    </style>
+  </head>
+  <body>
+    <h1>Events (SDK in the browser)</h1>
+    <p id="status">Loading…</p>
+    <ul id="events"></ul>
+
+    <script type="module">
+      // Built by `npm run build`. Once published: import { TimTimEvents } from "@timtim-live/events";
+      import { TimTimEvents } from "../../packages/events-js/dist/index.js";
+
+      // No key = demo mode (sample events). In a browser use only a website key (tt_pk_live_…) or a test key.
+      const tt = new TimTimEvents();
+      const status = document.getElementById("status");
+      const list = document.getElementById("events");
+
+      try {
+        const { events } = await tt.events.list({ city: "Miami", category: "music" });
+        status.textContent = `${events.length} sample event(s) — no real money.`;
+        for (const event of events) {
+          const li = document.createElement("li");
+          const name = document.createElement("strong");
+          name.textContent = event.name; // textContent, never innerHTML
+          li.append(name, document.createElement("br"), `${event.display.date_label ?? event.date} · ${event.location.city ?? ""}`);
+          if (event.tickets.buy_url?.startsWith("https://")) {
+            const a = document.createElement("a");
+            a.href = event.tickets.buy_url;
+            a.textContent = "Get tickets";
+            a.target = "_blank";
+            a.rel = "noopener";
+            li.append(" · ", a);
+          }
+          list.append(li);
+        }
+      } catch (error) {
+        status.textContent = `Could not load events: ${error.message}`;
+      }
+    </script>
+  </body>
+</html>

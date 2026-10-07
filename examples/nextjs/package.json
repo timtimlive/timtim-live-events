@@ -1,0 +1,17 @@
+{
+  "private": true,
+  "version": "0.0.0",
+  "license": "MIT",
+  "name": "examples-nextjs",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start"
+  },
+  "dependencies": {
+    "@timtim-live/events": "^0.1.0",
+    "next": "^16.4.0",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0"
+  }
+}

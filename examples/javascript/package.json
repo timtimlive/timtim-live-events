@@ -1,0 +1,14 @@
+{
+  "private": true,
+  "version": "0.0.0",
+  "license": "MIT",
+  "name": "examples-javascript",
+  "type": "module",
+  "scripts": {
+    "start": "node node-example.mjs",
+    "serve": "node ../../scripts/serve.mjs examples/javascript/browser.html"
+  },
+  "dependencies": {
+    "@timtim-live/events": "^0.1.0"
+  }
+}

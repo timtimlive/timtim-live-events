@@ -1,0 +1,65 @@
+{
+  "name": "@timtim-live/web-component",
+  "version": "0.1.0",
+  "description": "<timtim-events> — a custom element that shows live events from TimTim.Live on any web page. Developer Preview.",
+  "license": "MIT",
+  "author": "timtim-live",
+  "homepage": "https://timtim.live/developers",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/timtimlive/timtim-live-events.git",
+    "directory": "packages/web-component"
+  },
+  "bugs": {
+    "url": "https://github.com/timtimlive/timtim-live-events/issues"
+  },
+  "keywords": [
+    "events widget",
+    "web component",
+    "custom element",
+    "live events",
+    "event api",
+    "timtim",
+    "timtim.live"
+  ],
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      }
+    },
+    "./global": "./dist/timtim-events.global.js",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "sideEffects": true,
+  "engines": {
+    "node": ">=18"
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
+  "scripts": {
+    "build": "node -e \"require('fs').rmSync('dist',{recursive:true,force:true})\" && tsup",
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  },
+  "unpkg": "./dist/timtim-events.global.js",
+  "jsdelivr": "./dist/timtim-events.global.js",
+  "dependencies": {
+    "@timtim-live/events": "^0.1.0"
+  }
+}

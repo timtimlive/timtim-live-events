@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>TimTim.Live events — &lt;timtim-events&gt; web component</title>
+    <style>
+      body { font-family: system-ui, sans-serif; background: #fff; margin: 0 auto; max-width: 960px; padding: 24px 16px; color: #0f172a; }
+      label { margin-right: 12px; }
+    </style>
+    <!-- Built by `npm run build` from packages/web-component. Once published, this will come from npm or a CDN. -->
+    <script src="../../packages/web-component/dist/timtim-events.global.js"></script>
+  </head>
+  <body>
+    <h1>&lt;timtim-events&gt;</h1>
+    <p>Sample events — no real money. Change the city and the list fetches again.</p>
+
+    <p>
+      <label>City
+        <select id="city">
+          <option>Miami</option>
+          <option>Washington</option>
+          <option>Paris</option>
+          <option>Montreal</option>
+        </select>
+      </label>
+      <label>Pretend
+        <select id="simulate">
+          <option value="">a normal day</option>
+          <option value="sold_out">sold out</option>
+          <option value="cancelled">cancelled</option>
+          <option value="rate_limited">too many requests (error)</option>
+        </select>
+      </label>
+    </p>
+
+    <timtim-events id="events" city="Miami" category="music" limit="6"></timtim-events>
+
+    <script>
+      var el = document.getElementById("events");
+      document.getElementById("city").addEventListener("change", function (e) {
+        el.setAttribute("city", e.target.value);
+        el.setAttribute("category", e.target.value === "Miami" ? "music" : "");
+      });
+      document.getElementById("simulate").addEventListener("change", function (e) {
+        if (e.target.value) el.setAttribute("simulate", e.target.value);
+        else el.removeAttribute("simulate");
+      });
+      el.addEventListener("timtim-events-loaded", function (e) {
+        console.log("timtim-events loaded", e.detail.events.length, "events");
+      });
+    </script>
+  </body>
+</html>
