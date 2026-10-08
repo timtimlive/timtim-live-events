@@ -6,6 +6,8 @@ All notable changes to this repository. The format follows [Keep a Changelog](ht
 
 ### Added
 
+- Mobile: `@timtim-live/react-native` (`<TimTimEventList />`, the shared hook, ticket links via `Linking`, view/tap counting); a Swift package (`mobile/ios`, async/await, `Codable`) and a Kotlin client (`mobile/android`, kotlinx.serialization); `npm run check:mobile` fails CI if their models drift from the contract; CI builds and tests Swift on macOS and Kotlin on Linux.
+- `@timtim-live/mcp`: a read-only MCP server (stdio) with `find_events`, `find_events_near_location`, `find_events_by_category`, `get_event`, `list_categories`, `list_locations`; `timtim-mcp` command; sample events without a key. TimTim.Live also hosts the same tools at `https://api.timtim.live/v1/mcp`.
 - `@timtim-live/events`: `categories.list()` and `locations.list()` (with a key, or sample counts without one), `demo.categories.list()`, `demo.locations.list()`, and `track()` — a fire-and-forget `impression` / `event_view` / `event_click` signal that never throws and is never money.
 - `@timtim-live/web-component`: attributes `location`, `partner` (the old `key` still works), `layout`, `theme`, `show-images`, `show-price`, `tracking`; impression, view and click tracking by beacon. Hosted at `https://timtim.live/embed/v1/timtim-events.js`.
 

@@ -1,0 +1,7 @@
+# Swift
+ios/.build/
+ios/.swiftpm/
+# Kotlin / Gradle
+android/.gradle/
+android/build/
+android/.kotlin/

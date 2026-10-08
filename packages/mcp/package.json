@@ -1,0 +1,59 @@
+{
+  "name": "@timtim-live/mcp",
+  "version": "0.1.0",
+  "description": "A read-only MCP server that lets AI assistants find live events from TimTim.Live. Developer Preview.",
+  "license": "MIT",
+  "author": "timtim-live",
+  "homepage": "https://timtim.live/developers/ai",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/timtimlive/timtim-live-events.git",
+    "directory": "packages/mcp"
+  },
+  "bugs": {
+    "url": "https://github.com/timtimlive/timtim-live-events/issues"
+  },
+  "keywords": [
+    "mcp",
+    "model context protocol",
+    "ai assistant",
+    "live events",
+    "event api",
+    "timtim",
+    "timtim.live"
+  ],
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "bin": {
+    "timtim-mcp": "./dist/cli.js"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
+  "scripts": {
+    "build": "node -e \"require('fs').rmSync('dist',{recursive:true,force:true})\" && tsup",
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.32.1",
+    "@timtim-live/events": "^0.1.0",
+    "zod": "^3.25.0"
+  }
+}

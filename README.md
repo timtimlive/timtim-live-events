@@ -17,6 +17,9 @@ There are three pieces in this box:
 | [`@timtim-live/events`](packages/events-js) | A small JavaScript library | Any JavaScript: Node, browsers, Deno, Bun, edge |
 | [`@timtim-live/web-component`](packages/web-component) | A `<timtim-events>` tag | Any web page |
 | [`@timtim-live/react`](packages/react) | `<TimTimEvents />` and `useTimTimEvents()` | React apps |
+| [`@timtim-live/react-native`](packages/react-native) | `<TimTimEventList />` and the same hook | React Native / Expo apps |
+| [Swift](mobile/ios) and [Kotlin](mobile/android) clients | Typed clients checked against the contract | Native iOS and Android apps |
+| [`@timtim-live/mcp`](packages/mcp) | A read-only MCP server: find events, get one event, list types and cities | AI assistants (Claude, Cursor, VS Code…) — or use the hosted `https://api.timtim.live/v1/mcp` |
 
 ## Live Demo
 
@@ -135,7 +138,7 @@ Errors from the API become `TimTimApiError` with `status`, `code`, `title`, `det
 - 60-second quickstart: https://timtim.live/developers/quickstart
 - API contract (OpenAPI 3.1): https://timtim.live/partner-api/openapi.yaml — also in [timtim-openapi](https://github.com/timtimlive/timtim-openapi)
 - Status: https://timtim.live/developers/status
-- Package READMEs: [events](packages/events-js/README.md) · [web-component](packages/web-component/README.md) · [react](packages/react/README.md)
+- Package READMEs: [events](packages/events-js/README.md) · [web-component](packages/web-component/README.md) · [react](packages/react/README.md) · [mcp](packages/mcp/README.md) · [react-native](packages/react-native/README.md) · [mobile](mobile/README.md)
 
 ## Security
 

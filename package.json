@@ -14,6 +14,8 @@
     "packages/events-js",
     "packages/web-component",
     "packages/react",
+    "packages/mcp",
+    "packages/react-native",
     "examples/javascript",
     "examples/html",
     "examples/react",
@@ -23,16 +25,17 @@
     "node": ">=20.19"
   },
   "scripts": {
-    "build": "npm run build -w @timtim-live/events && npm run build -w @timtim-live/web-component && npm run build -w @timtim-live/react",
+    "build": "npm run build -w @timtim-live/events && npm run build -w @timtim-live/web-component && npm run build -w @timtim-live/react && npm run build -w @timtim-live/react-native && npm run build -w @timtim-live/mcp",
     "generate": "npm run generate -w @timtim-live/events",
     "check:generated": "npm run check:generated -w @timtim-live/events",
     "lint": "eslint .",
-    "typecheck": "npm run typecheck -w @timtim-live/events && npm run typecheck -w @timtim-live/web-component && npm run typecheck -w @timtim-live/react && tsc --noEmit -p examples/react/tsconfig.json",
+    "typecheck": "npm run typecheck -w @timtim-live/events && npm run typecheck -w @timtim-live/web-component && npm run typecheck -w @timtim-live/react && npm run typecheck -w @timtim-live/mcp && npm run typecheck -w @timtim-live/react-native && tsc --noEmit -p examples/react/tsconfig.json",
     "test": "vitest run",
     "test:integration": "vitest run --config vitest.integration.config.ts",
     "smoke:dist": "node scripts/smoke-dist.mjs",
     "example:node": "npm run start -w examples-javascript",
-    "check:contract": "node scripts/check-contract.mjs"
+    "check:contract": "node scripts/check-contract.mjs",
+    "check:mobile": "node scripts/check-mobile-models.mjs"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.0",

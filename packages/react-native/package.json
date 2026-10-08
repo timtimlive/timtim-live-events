@@ -1,0 +1,70 @@
+{
+  "name": "@timtim-live/react-native",
+  "version": "0.1.0",
+  "description": "React Native components and hooks for showing live events from TimTim.Live in iOS and Android apps. Developer Preview.",
+  "license": "MIT",
+  "author": "timtim-live",
+  "homepage": "https://timtim.live/developers",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/timtimlive/timtim-live-events.git",
+    "directory": "packages/react-native"
+  },
+  "bugs": {
+    "url": "https://github.com/timtimlive/timtim-live-events/issues"
+  },
+  "keywords": [
+    "react-native",
+    "expo",
+    "live events",
+    "event api",
+    "mobile",
+    "timtim",
+    "timtim.live"
+  ],
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      }
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "sideEffects": false,
+  "engines": {
+    "node": ">=18"
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
+  "scripts": {
+    "build": "node -e \"require('fs').rmSync('dist',{recursive:true,force:true})\" && tsup",
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  },
+  "dependencies": {
+    "@timtim-live/events": "^0.1.0",
+    "@timtim-live/react": "^0.1.0"
+  },
+  "peerDependencies": {
+    "react": ">=18",
+    "react-native": ">=0.72"
+  },
+  "devDependencies": {
+    "react-native": "^0.87.1"
+  }
+}
