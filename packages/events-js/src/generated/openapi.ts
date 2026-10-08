@@ -52,6 +52,28 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/demo/events/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * One sample event, no key
+         * @description The same answer as `GET /events/{id}` for a test key, for one sample event,
+         *     with no key. Ids start with `evt_test_` (list them with `GET /demo/events`).
+         *     `simulate` works as on `/demo/events`. Unknown ids answer 404 `event_not_found`.
+         */
+        get: operations["getDemoEvent"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/categories": {
         parameters: {
             query?: never;
@@ -787,6 +809,8 @@ export interface components {
             detail: string;
             request_id: string;
             code: string;
+            /** @description 405 only: the methods this address answers (also in the Allow header). */
+            allowed?: string[];
         };
     };
     responses: {
@@ -819,6 +843,12 @@ export interface components {
     headers: {
         /** @description Send this to TimTim.Live support and we can find your request. */
         RequestId: string;
+        /** @description Requests this key may make per one-minute window. */
+        RateLimitLimit: number;
+        /** @description Requests left in the current window. */
+        RateLimitRemaining: number;
+        /** @description Seconds until the current window ends and the count starts again. */
+        RateLimitReset: number;
     };
     pathItems: never;
 }
@@ -862,6 +892,9 @@ export interface operations {
             200: {
                 headers: {
                     "TimTim-Request-Id": components["headers"]["RequestId"];
+                    "RateLimit-Limit": components["headers"]["RateLimitLimit"];
+                    "RateLimit-Remaining": components["headers"]["RateLimitRemaining"];
+                    "RateLimit-Reset": components["headers"]["RateLimitReset"];
                     [name: string]: unknown;
                 };
                 content: {
@@ -929,6 +962,43 @@ export interface operations {
             };
             400: components["responses"]["Problem"];
             401: components["responses"]["Problem"];
+            429: components["responses"]["Problem"];
+        };
+    };
+    getDemoEvent: {
+        parameters: {
+            query?: {
+                /** @description Sandbox only. */
+                simulate?: "sold_out" | "cancelled" | "rescheduled" | "postponed" | "invalid_key" | "rate_limited";
+            };
+            header?: never;
+            path: {
+                /** @example evt_test_miami_konpa */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The sample event. */
+            200: {
+                headers: {
+                    "TimTim-Request-Id": components["headers"]["RequestId"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @constant */
+                        object: "event";
+                        /** @constant */
+                        mode: "test";
+                        event: components["schemas"]["Event"];
+                    };
+                };
+            };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            404: components["responses"]["Problem"];
             429: components["responses"]["Problem"];
         };
     };
@@ -1120,6 +1190,9 @@ export interface operations {
             200: {
                 headers: {
                     "TimTim-Request-Id": components["headers"]["RequestId"];
+                    "RateLimit-Limit": components["headers"]["RateLimitLimit"];
+                    "RateLimit-Remaining": components["headers"]["RateLimitRemaining"];
+                    "RateLimit-Reset": components["headers"]["RateLimitReset"];
                     [name: string]: unknown;
                 };
                 content: {
