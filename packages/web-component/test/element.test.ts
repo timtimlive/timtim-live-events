@@ -42,7 +42,18 @@ beforeEach(() => {
     return respond(String(input));
   });
   vi.spyOn(console, "error").mockImplementation(() => {});
+  beacons = [];
+  vi.spyOn(navigator, "sendBeacon").mockImplementation((url: string | URL, data?: BodyInit | null) => {
+    beacons.push({ url: String(url), body: data as Blob });
+    return true;
+  });
 });
+
+type Beacon = { url: string; body: Blob };
+let beacons: Beacon[] = [];
+async function signals(): Promise<Array<Record<string, unknown>>> {
+  return Promise.all(beacons.map(async (b) => JSON.parse(await b.body.text()) as Record<string, unknown>));
+}
 
 afterEach(() => {
   document.body.replaceChildren();
@@ -194,6 +205,69 @@ describe("<timtim-events>", () => {
     button.click();
     await vi.waitFor(() => expect(shadow(node).querySelectorAll("li")).toHaveLength(1));
     expect(calls).toHaveLength(2);
+  });
+
+  it("reads location as city and country, and partner as the key", async () => {
+    const node = mount({ location: "Port-au-Prince, ht", partner: "tt_pk_live_example_key" });
+    await settled(node);
+    const url = new URL(calls[0].url);
+    expect(url.pathname).toBe("/v1/events");
+    expect(url.searchParams.get("city")).toBe("Port-au-Prince");
+    expect(url.searchParams.get("country")).toBe("HT");
+    expect(new Headers(calls[0].init.headers as HeadersInit).get("Authorization")).toBe("Bearer tt_pk_live_example_key");
+  });
+
+  it("tells TimTim.Live what was shown and clicked — never money, with no cookie", async () => {
+    const node = mount({ city: "Miami", partner: "tt_test_example_key" });
+    await settled(node);
+    await vi.waitFor(() => expect(beacons.length).toBeGreaterThan(0));
+    (shadow(node).querySelector("a.buy") as HTMLAnchorElement).dispatchEvent(new MouseEvent("click", { cancelable: true }));
+    await vi.waitFor(() => expect(beacons.length).toBeGreaterThanOrEqual(2));
+    expect(beacons.every((b) => b.url === "https://api.timtim.live/v1/track")).toBe(true);
+    expect(beacons[0].body.type).toBe("text/plain");
+    const [impression, click] = (await signals()).filter((s) => s.type !== "event_view");
+    expect(impression).toMatchObject({ type: "impression", shown: 1, key: "tt_test_example_key" });
+    expect(click).toMatchObject({ type: "event_click", event_id: EVENT.id, key: "tt_test_example_key" });
+    expect(String(impression.view)).toMatch(/^pv_[0-9a-f]{24}$/);
+    expect(click.view).toBe(impression.view);
+    for (const s of await signals()) expect(Object.keys(s).sort()).toEqual(expect.arrayContaining(["type", "view"]));
+    expect(calls.some((c) => c.url.includes("/track"))).toBe(false);
+  });
+
+  it("sends nothing when tracking is off, or while simulating a bad day", async () => {
+    const off = mount({ city: "Miami", tracking: "off" });
+    await settled(off);
+    const sim = mount({ city: "Miami", simulate: "sold_out" });
+    await settled(sim);
+    (shadow(off).querySelector("a.buy") as HTMLAnchorElement).dispatchEvent(new MouseEvent("click", { cancelable: true }));
+    await new Promise((r) => setTimeout(r, 20));
+    expect(beacons).toHaveLength(0);
+  });
+
+  it("a failed tracking call never breaks the list", async () => {
+    vi.spyOn(navigator, "sendBeacon").mockImplementation(() => {
+      throw new Error("blocked by an ad blocker");
+    });
+    respond = (url) => (url.includes("/track") ? Promise.reject(new Error("offline")) as unknown as Response : page([EVENT]));
+    const node = mount({ city: "Miami" });
+    await settled(node);
+    expect(shadow(node).querySelectorAll("li")).toHaveLength(1);
+    expect(shadow(node).querySelector("[role=alert]")).toBeNull();
+  });
+
+  it("layout, theme, show-images and show-price change only the look", async () => {
+    const node = mount({ city: "Miami", layout: "compact", theme: "dark", "show-images": "false", "show-price": "false" });
+    await settled(node);
+    const root = shadow(node);
+    expect(root.querySelector("ul")!.className).toBe("grid compact");
+    expect(root.querySelector("style")!.textContent).toContain("--tt-bg:#0f172a");
+    expect(root.querySelectorAll("img")).toHaveLength(0);
+    expect(root.querySelector(".price")).toBeNull();
+    expect(root.querySelector("a.buy")).not.toBeNull();
+    node.setAttribute("layout", "<bogus>");
+    node.setAttribute("theme", "auto");
+    await vi.waitFor(() => expect(shadow(node).querySelector("ul")?.className).toBe("grid"));
+    expect(shadow(node).querySelector("style")!.textContent).toContain("prefers-color-scheme:dark");
   });
 
   it("accepts only a hex color", async () => {

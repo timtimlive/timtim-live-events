@@ -4,6 +4,11 @@ All notable changes to this repository. The format follows [Keep a Changelog](ht
 
 ## [Unreleased]
 
+### Added
+
+- `@timtim-live/events`: `categories.list()` and `locations.list()` (with a key, or sample counts without one), `demo.categories.list()`, `demo.locations.list()`, and `track()` — a fire-and-forget `impression` / `event_view` / `event_click` signal that never throws and is never money.
+- `@timtim-live/web-component`: attributes `location`, `partner` (the old `key` still works), `layout`, `theme`, `show-images`, `show-price`, `tracking`; impression, view and click tracking by beacon. Hosted at `https://timtim.live/embed/v1/timtim-events.js`.
+
 ## [0.1.0] — Developer Preview (unreleased)
 
 Not published to npm yet.

@@ -16,6 +16,8 @@ export type Order = components["schemas"]["Order"];
 export type Settlement = components["schemas"]["Settlement"];
 export type Offer = components["schemas"]["Offer"];
 export type Problem = components["schemas"]["Problem"];
+export type Category = components["schemas"]["Category"];
+export type Location = components["schemas"]["Location"];
 
 /* Responses */
 export type EventList = JsonOf<operations["listEvents"]["responses"][200]>;
@@ -25,6 +27,10 @@ export type TicketTypeList = JsonOf<operations["listTicketTypes"]["responses"][2
 export type EarningList = JsonOf<operations["listEarnings"]["responses"][200]>;
 export type SettlementList = JsonOf<operations["listSettlements"]["responses"][200]>;
 export type OfferList = JsonOf<operations["listOffers"]["responses"][200]>;
+export type CategoryList = JsonOf<operations["listCategories"]["responses"][200]>;
+export type LocationList = JsonOf<operations["listLocations"]["responses"][200]>;
+export type DemoCategoryList = JsonOf<operations["listDemoCategories"]["responses"][200]>;
+export type DemoLocationList = JsonOf<operations["listDemoLocations"]["responses"][200]>;
 
 /* Requests */
 export type ListEventsParams = NonNullable<operations["listEvents"]["parameters"]["query"]>;
@@ -34,6 +40,10 @@ export type CreateOrderBody = operations["createOrder"]["requestBody"]["content"
 export type FeedFile = operations["eventFeed"]["parameters"]["path"]["file"];
 export type FeedParams = Omit<NonNullable<operations["eventFeed"]["parameters"]["query"]>, "key">;
 export type Simulation = NonNullable<ListDemoEventsParams["simulate"]>;
+export type ListCategoriesParams = NonNullable<operations["listCategories"]["parameters"]["query"]>;
+export type ListLocationsParams = NonNullable<operations["listLocations"]["parameters"]["query"]>;
+/** What a page tells TimTim.Live it showed or a visitor clicked (operation track). Never money. */
+export type TrackSignal = operations["track"]["requestBody"]["content"]["application/json"];
 
 /* Webhook messages (what TimTim.Live POSTs to your endpoint) */
 export type EventChangedMessage = JsonOf<NonNullable<operations["eventChangedWebhook"]["requestBody"]>>;

@@ -1,7 +1,14 @@
 import { TimTimError, apiErrorFrom } from "./errors.js";
 import type {
+  CategoryList,
   CreateOrderBody,
+  DemoCategoryList,
   DemoEventList,
+  DemoLocationList,
+  ListCategoriesParams,
+  ListLocationsParams,
+  LocationList,
+  TrackSignal,
   EarningList,
   EventList,
   EventResponse,
@@ -165,6 +172,27 @@ export class TimTimEvents {
     }
   }
 
+  /* ── What you can ask for ────────────────────────────────────────────────── */
+
+  readonly categories = {
+    /**
+     * The categories that have upcoming events for this key, with counts
+     * (operation listCategories). With no key: counted from sample events.
+     */
+    list: async (params: ListCategoriesParams = {}): Promise<CategoryList> =>
+      this.mode === "demo"
+        ? this.request<DemoCategoryList>("GET", "/demo/categories", { query: params as Query, auth: false })
+        : this.request<CategoryList>("GET", "/categories", { query: params as Query }),
+  };
+
+  readonly locations = {
+    /** The cities that have upcoming events for this key, with counts (operation listLocations). With no key: sample events. */
+    list: async (params: ListLocationsParams = {}): Promise<LocationList> =>
+      this.mode === "demo"
+        ? this.request<DemoLocationList>("GET", "/demo/locations", { query: params as Query, auth: false })
+        : this.request<LocationList>("GET", "/locations", { query: params as Query }),
+  };
+
   /* ── Demo (no key, ever) ─────────────────────────────────────────────────── */
 
   readonly demo = {
@@ -177,7 +205,39 @@ export class TimTimEvents {
       list: async (params: ListDemoEventsParams = {}): Promise<DemoEventList> =>
         this.request<DemoEventList>("GET", "/demo/events", { query: params as Query, auth: false }),
     },
+    categories: {
+      list: async (params: ListCategoriesParams = {}): Promise<DemoCategoryList> =>
+        this.request<DemoCategoryList>("GET", "/demo/categories", { query: params as Query, auth: false }),
+    },
+    locations: {
+      list: async (params: ListLocationsParams = {}): Promise<DemoLocationList> =>
+        this.request<DemoLocationList>("GET", "/demo/locations", { query: params as Query, auth: false }),
+    },
   };
+
+  /* ── Tracking (operation track) ──────────────────────────────────────────── */
+
+  /**
+   * Tell TimTim.Live what your page showed or a visitor clicked, so your
+   * dashboard can count it: `impression`, `event_view` or `event_click`. Never
+   * money — sales are recorded by TimTim.Live itself. Your website or test key
+   * is added for you (never a server key). Fire-and-forget: it never throws and
+   * resolves true when the signal was handed to the browser or answered 204.
+   */
+  async track(signal: Omit<TrackSignal, "key">): Promise<boolean> {
+    const key = this.apiKey && (this.apiKey.startsWith("tt_pk_live_") || this.apiKey.startsWith("tt_test_")) ? this.apiKey : undefined;
+    /* text/plain keeps it a "simple" request: no preflight, and sendBeacon can carry it as the page closes. */
+    const payload = JSON.stringify({ ...signal, ...(key ? { key } : {}) });
+    const url = `${this.baseUrl}/track`;
+    try {
+      const nav = (globalThis as { navigator?: { sendBeacon?: (u: string, d: Blob | string) => boolean } }).navigator;
+      if (nav?.sendBeacon && typeof Blob === "function" && nav.sendBeacon(url, new Blob([payload], { type: "text/plain" }))) return true;
+      const response = await this.fetchImpl(url, { method: "POST", headers: { "Content-Type": "text/plain" }, body: payload, keepalive: true } as RequestInit);
+      return response.status === 204;
+    } catch {
+      return false;
+    }
+  }
 
   /* ── Embedded commerce (server keys or test keys) ───────────────────────── */
 

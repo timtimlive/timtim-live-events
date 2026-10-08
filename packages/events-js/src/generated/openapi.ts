@@ -52,6 +52,121 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/categories": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Which categories have events
+         * @description The categories you could pass to `GET /events` right now, each with how
+         *     many upcoming events it has. Counted with exactly the same rules as
+         *     `GET /events` for your key (what you are allowed to show, upcoming
+         *     only), so a category that says 3 gives 3. A test key counts sample events.
+         */
+        get: operations["listCategories"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/locations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Which cities have events
+         * @description The cities you could pass to `GET /events` as `city` (with `country`), each with how many upcoming events it has. Same rules as `/categories`.
+         */
+        get: operations["listLocations"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/demo/categories": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Sample categories, no key
+         * @description `GET /categories` counted from sample events, with no key. Readable from any website (CORS `*`).
+         */
+        get: operations["listDemoCategories"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/demo/locations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Sample cities, no key
+         * @description `GET /locations` counted from sample events, with no key. Readable from any website (CORS `*`).
+         */
+        get: operations["listDemoLocations"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/track": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Say what a visitor saw and clicked
+         * @description Sent by the embed (and by your own page, if you build one) so you can see
+         *     how many people saw your events and clicked them. No key needed; send your
+         *     website key (`tt_pk_live_…`) or test key to count it under your account. A
+         *     website key only counts from its allowed domains — anywhere else the signal
+         *     is quietly ignored. Never send a server key.
+         *
+         *     **Not money.** These are browser signals. A sale, a refund or a reward is
+         *     recorded by TimTim.Live when it happens and is never accepted here: `purchase`,
+         *     `refund` and the like are refused. `204` means "heard", not "credited".
+         *
+         *     Repeats from the same page load count once. We never store your visitors'
+         *     IP address, browser, cookies or the page address. Works with
+         *     `navigator.sendBeacon` (a `text/plain` body is read as JSON).
+         */
+        post: operations["track"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/events/{id}": {
         parameters: {
             query?: never;
@@ -389,6 +504,21 @@ export interface webhooks {
 }
 export interface components {
     schemas: {
+        Category: {
+            /**
+             * @description Pass it to /events as category.
+             * @example music
+             */
+            id: string;
+            events: number;
+        };
+        Location: {
+            /** @example Miami */
+            city: string;
+            /** @example US */
+            country: string | null;
+            events: number;
+        };
         /** @description An event that is no longer shared with partners. Stop showing it. Never says why. */
         Withdrawn: {
             id: string;
@@ -800,6 +930,178 @@ export interface operations {
             400: components["responses"]["Problem"];
             401: components["responses"]["Problem"];
             429: components["responses"]["Problem"];
+        };
+    };
+    listCategories: {
+        parameters: {
+            query?: {
+                /** @example US */
+                country?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Categories, most events first. */
+            200: {
+                headers: {
+                    "TimTim-Request-Id": components["headers"]["RequestId"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @constant */
+                        object: "list";
+                        /** @enum {string} */
+                        mode: "test" | "live";
+                        categories: components["schemas"]["Category"][];
+                        notices?: string[];
+                    };
+                };
+            };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            429: components["responses"]["Problem"];
+        };
+    };
+    listLocations: {
+        parameters: {
+            query?: {
+                /** @example US */
+                country?: string;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Cities, most events first. */
+            200: {
+                headers: {
+                    "TimTim-Request-Id": components["headers"]["RequestId"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @constant */
+                        object: "list";
+                        /** @enum {string} */
+                        mode: "test" | "live";
+                        locations: components["schemas"]["Location"][];
+                        notices?: string[];
+                    };
+                };
+            };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            429: components["responses"]["Problem"];
+        };
+    };
+    listDemoCategories: {
+        parameters: {
+            query?: {
+                country?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sample categories. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @constant */
+                        object: "list";
+                        /** @constant */
+                        mode: "test";
+                        categories: components["schemas"]["Category"][];
+                        notices?: string[];
+                    };
+                };
+            };
+            400: components["responses"]["Problem"];
+        };
+    };
+    listDemoLocations: {
+        parameters: {
+            query?: {
+                country?: string;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sample cities. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @constant */
+                        object: "list";
+                        /** @constant */
+                        mode: "test";
+                        locations: components["schemas"]["Location"][];
+                        notices?: string[];
+                    };
+                };
+            };
+            400: components["responses"]["Problem"];
+        };
+    };
+    track: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "type": "event_click",
+                 *       "event_id": "evt_test_washington_konpa",
+                 *       "key": "tt_test_example",
+                 *       "view": "pv_8F3kmQx2LpA0"
+                 *     }
+                 */
+                "application/json": {
+                    /** @enum {string} */
+                    type: "impression" | "event_view" | "event_click";
+                    /** @description Required for event_view and event_click — the id exactly as /events gave it. */
+                    event_id?: string;
+                    /** @description Your website key or test key. Optional. */
+                    key?: string;
+                    /** @description impression only: how many events were shown. */
+                    shown?: number;
+                    /** @description A random id you make once per page load, so a retry is not counted twice. */
+                    view?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Heard. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            400: components["responses"]["Problem"];
         };
     };
     getEvent: {

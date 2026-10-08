@@ -146,6 +146,32 @@ describe("with a key", () => {
     expect(headersOf(calls[0]).get("Authorization")).toBeNull();
   });
 
+  it("categories and locations use the keyed paths with a key, the demo paths without", async () => {
+    const { fn, calls } = mockFetch((url) => json(url.includes("categor") ? { object: "list", mode: "test", categories: [{ id: "music", events: 3 }] } : { object: "list", mode: "test", locations: [{ city: "Miami", country: "US", events: 2 }] }));
+    const keyed = new TimTimEvents({ apiKey: TEST_KEY, fetch: fn });
+    expect((await keyed.categories.list({ country: "US" })).categories[0]).toEqual({ id: "music", events: 3 });
+    expect((await keyed.locations.list({ limit: 5 })).locations[0].city).toBe("Miami");
+    const keyless = new TimTimEvents({ fetch: fn });
+    await keyless.categories.list();
+    await keyless.demo.locations.list({ country: "US" });
+    expect(calls.map((c) => c.url)).toEqual([`${BASE}/categories?country=US`, `${BASE}/locations?limit=5`, `${BASE}/demo/categories`, `${BASE}/demo/locations?country=US`]);
+    expect(headersOf(calls[0]).get("Authorization")).toBe(`Bearer ${TEST_KEY}`);
+    expect(headersOf(calls[2]).get("Authorization")).toBeNull();
+  });
+
+  it("track() posts a text/plain signal with the public key, and never throws", async () => {
+    const { fn, calls } = mockFetch(() => new Response(null, { status: 204 }));
+    const tt = new TimTimEvents({ apiKey: TEST_KEY, fetch: fn });
+    expect(await tt.track({ type: "event_click", event_id: "evt_1", view: "pv_12345678" })).toBe(true);
+    expect(calls[0].url).toBe(`${BASE}/track`);
+    expect(calls[0].init.method).toBe("POST");
+    expect(headersOf(calls[0]).get("Content-Type")).toBe("text/plain");
+    expect(headersOf(calls[0]).get("Authorization")).toBeNull();
+    expect(JSON.parse(String(calls[0].init.body))).toEqual({ type: "event_click", event_id: "evt_1", view: "pv_12345678", key: TEST_KEY });
+    const broken = new TimTimEvents({ fetch: (async () => { throw new Error("offline"); }) as typeof fetch });
+    expect(await broken.track({ type: "impression" })).toBe(false);
+  });
+
   it("tickets.list calls /events/{id}/tickets", async () => {
     const { fn, calls } = mockFetch(() => json({ object: "list", mode: "test", event_id: "evt_test_miami_konpa", ticket_types: [] }));
     const tt = new TimTimEvents({ apiKey: TEST_KEY, fetch: fn });
