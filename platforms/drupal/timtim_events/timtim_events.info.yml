@@ -1,0 +1,6 @@
+name: 'TimTim.Live Events'
+type: module
+description: 'Show live events from TimTim.Live in a block. Place it from Block layout and choose the city, type and layout.'
+package: 'TimTim.Live'
+core_version_requirement: ^10 || ^11
+configure: block.admin_display

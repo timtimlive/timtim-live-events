@@ -1,0 +1,82 @@
+{%- comment -%}
+  TimTim.Live Events — a Shopify theme app block.
+  A merchant adds it in the theme editor (Add block → Apps → TimTim.Live Events)
+  and sets everything in the side panel. It loads the hosted TimTim.Live embed
+  (the open-source <timtim-events>); no event data passes through Shopify.
+  Every value is escaped. A partner key is only written when it is a website
+  key (tt_pk_live_) or test key (tt_test_) — never a server key.
+{%- endcomment -%}
+{%- assign key = block.settings.partner_key | strip -%}
+{%- assign key_start_11 = key | slice: 0, 11 -%}
+{%- assign key_start_8 = key | slice: 0, 8 -%}
+{%- assign key_ok = false -%}
+{%- if key_start_11 == 'tt_pk_live_' or key_start_8 == 'tt_test_' -%}{%- assign key_ok = true -%}{%- endif -%}
+<div class="timtim-events-block" {{ block.shopify_attributes }}>
+  {%- if block.settings.heading != blank -%}
+    <h2 class="timtim-events-block__heading">{{ block.settings.heading | escape }}</h2>
+  {%- endif -%}
+  <timtim-events
+    {%- if block.settings.location != blank %} location="{{ block.settings.location | strip | escape }}"{% endif -%}
+    {%- if block.settings.category != blank %} category="{{ block.settings.category | escape }}"{% endif %}
+    limit="{{ block.settings.limit | escape }}"
+    {%- if block.settings.layout != 'grid' %} layout="{{ block.settings.layout | escape }}"{% endif -%}
+    {%- if block.settings.theme != 'light' %} theme="{{ block.settings.theme | escape }}"{% endif %}
+    color="{{ block.settings.color | escape }}"
+    {%- unless block.settings.show_images %} show-images="false"{% endunless -%}
+    {%- unless block.settings.show_price %} show-price="false"{% endunless -%}
+    {%- if key_ok %} partner="{{ key | escape }}"{% endif -%}
+    lang="{{ request.locale.iso_code | escape }}"
+  ></timtim-events>
+</div>
+<script src="https://timtim.live/embed/v1/timtim-events.js" defer></script>
+
+{% schema %}
+{
+  "name": "TimTim.Live Events",
+  "target": "section",
+  "settings": [
+    { "type": "text", "id": "heading", "label": "Heading", "default": "Upcoming events" },
+    { "type": "text", "id": "location", "label": "Location", "info": "A city, or City,CC — for example Miami,US or Paris,FR.", "default": "Miami,US" },
+    {
+      "type": "select",
+      "id": "category",
+      "label": "Event type",
+      "options": [
+        { "value": "", "label": "Any" },
+        { "value": "music", "label": "Music" },
+        { "value": "festival", "label": "Festival" },
+        { "value": "nightlife", "label": "Nightlife" },
+        { "value": "conference", "label": "Conference" }
+      ],
+      "default": "music"
+    },
+    { "type": "range", "id": "limit", "label": "How many", "min": 1, "max": 24, "step": 1, "default": 6 },
+    {
+      "type": "select",
+      "id": "layout",
+      "label": "Layout",
+      "options": [
+        { "value": "grid", "label": "Cards" },
+        { "value": "list", "label": "List" },
+        { "value": "compact", "label": "Compact" }
+      ],
+      "default": "grid"
+    },
+    {
+      "type": "select",
+      "id": "theme",
+      "label": "Colors",
+      "options": [
+        { "value": "light", "label": "Light" },
+        { "value": "dark", "label": "Dark" },
+        { "value": "auto", "label": "Match visitor" }
+      ],
+      "default": "light"
+    },
+    { "type": "color", "id": "color", "label": "Button color", "default": "#0e7490" },
+    { "type": "checkbox", "id": "show_images", "label": "Show pictures", "default": true },
+    { "type": "checkbox", "id": "show_price", "label": "Show prices", "default": true },
+    { "type": "text", "id": "partner_key", "label": "TimTim.Live website key", "info": "Optional. Your website key (tt_pk_live_…) shows real events and counts clicks for you. Leave empty for sample events. Never a server key." }
+  ]
+}
+{% endschema %}

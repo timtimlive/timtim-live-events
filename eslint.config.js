@@ -4,7 +4,9 @@ import tseslint from "typescript-eslint";
 
 export default tseslint.config(
   {
-    ignores: ["**/node_modules/**", "**/dist/**", "**/.next/**", "**/src/generated/**", "**/next-env.d.ts"],
+    ignores: ["**/node_modules/**", "**/dist/**", "**/.next/**", "**/src/generated/**", "**/next-env.d.ts",
+      /* Bubble plugin-editor snippets: bare function bodies Bubble wraps itself — run and tested by platforms/test instead. */
+      "platforms/bubble/plugin-element/**"],
   },
   js.configs.recommended,
   ...tseslint.configs.recommended,

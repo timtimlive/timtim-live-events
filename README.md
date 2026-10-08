@@ -19,6 +19,7 @@ There are three pieces in this box:
 | [`@timtim-live/react`](packages/react) | `<TimTimEvents />` and `useTimTimEvents()` | React apps |
 | [`@timtim-live/react-native`](packages/react-native) | `<TimTimEventList />` and the same hook | React Native / Expo apps |
 | [Swift](mobile/ios) and [Kotlin](mobile/android) clients | Typed clients checked against the contract | Native iOS and Android apps |
+| [Platform integrations](platforms) | Shopify block, Framer component, Drupal and Joomla modules, Bubble plugin code; Wix, Webflow, Squarespace guides | Website builders and CMSs — [marketplace status](platforms/MARKETPLACES.md) |
 | [`@timtim-live/mcp`](packages/mcp) | A read-only MCP server: find events, get one event, list types and cities | AI assistants (Claude, Cursor, VS Code…) — or use the hosted `https://api.timtim.live/v1/mcp` |
 
 ## Live Demo

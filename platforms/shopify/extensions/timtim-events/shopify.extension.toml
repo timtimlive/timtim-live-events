@@ -1,0 +1,4 @@
+# TimTim.Live Events — Shopify theme app extension.
+# Deployed with the Shopify CLI from platforms/shopify: `shopify app deploy`.
+name = "TimTim.Live Events"
+type = "theme"

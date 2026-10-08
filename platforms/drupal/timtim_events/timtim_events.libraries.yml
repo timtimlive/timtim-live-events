@@ -1,0 +1,6 @@
+# The hosted TimTim.Live embed: the open-source <timtim-events> web component.
+# Loaded from timtim.live so it stays up to date; /embed/v1/ only ever grows.
+embed:
+  version: 1.x
+  js:
+    https://timtim.live/embed/v1/timtim-events.js: { type: external, attributes: { defer: true } }

@@ -1,0 +1,31 @@
+block.settings.timtim_events_block:
+  type: block_settings
+  label: 'TimTim.Live Events block'
+  mapping:
+    location:
+      type: string
+      label: 'Location'
+    category:
+      type: string
+      label: 'Event type'
+    limit:
+      type: integer
+      label: 'How many'
+    layout:
+      type: string
+      label: 'Layout'
+    theme:
+      type: string
+      label: 'Colors'
+    color:
+      type: string
+      label: 'Button color'
+    show_images:
+      type: boolean
+      label: 'Show pictures'
+    show_price:
+      type: boolean
+      label: 'Show prices'
+    partner_key:
+      type: string
+      label: 'Website key'

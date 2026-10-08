@@ -1,0 +1,18 @@
+# TimTim.Live Events — Shopify app configuration.
+#
+# NOT DEPLOYED YET. `client_id` is filled in by `shopify app config link`
+# once TimTim.Live has a Shopify Partner account and creates the app
+# (see platforms/MARKETPLACES.md). Until then, merchants can use the
+# "Custom Liquid" path in platforms/shopify/README.md, which works today.
+#
+# The app needs NO Admin API access: the block only loads the public embed.
+name = "TimTim.Live Events"
+client_id = ""
+application_url = "https://timtim.live/developers/connect"
+embedded = false
+
+[access_scopes]
+scopes = ""
+
+[build]
+include_config_on_deploy = true

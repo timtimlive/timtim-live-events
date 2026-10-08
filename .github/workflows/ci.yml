@@ -113,3 +113,17 @@ jobs:
       - name: Build and test
         working-directory: mobile/android
         run: gradle --no-daemon build
+
+  php:
+    name: Drupal and Joomla modules (PHP)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Lint every PHP file
+        run: php --version && find platforms -name '*.php' -print0 | xargs -0 -n1 php -l
+      - name: Drupal block rules
+        run: php platforms/drupal/test/block_test.php
+      - name: Joomla module rules
+        run: php platforms/joomla/test/helper_test.php

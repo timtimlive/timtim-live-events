@@ -26,4 +26,6 @@ kotlin {
 
 tasks.test {
     useJUnitPlatform()
+    // Name every test in the log, so CI shows what actually ran.
+    testLogging { events("passed", "skipped", "failed") }
 }
