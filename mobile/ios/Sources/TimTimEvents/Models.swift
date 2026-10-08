@@ -154,4 +154,6 @@ public struct Problem: Codable, Sendable {
     public let detail: String
     public let requestId: String?
     public let code: String?
+    /// 405 only: the methods this address answers (also in the Allow header).
+    public let allowed: [String]?
 }

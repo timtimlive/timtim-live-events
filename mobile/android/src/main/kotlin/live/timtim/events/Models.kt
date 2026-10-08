@@ -139,4 +139,6 @@ public data class Problem(
     val detail: String,
     @SerialName("request_id") val requestId: String? = null,
     val code: String? = null,
+    /** 405 only: the methods this address answers (also in the Allow header). */
+    val allowed: List<String>? = null,
 )
