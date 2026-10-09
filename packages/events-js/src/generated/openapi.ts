@@ -814,6 +814,15 @@ export interface components {
         };
     };
     responses: {
+        /** @description Nothing changed since the ETag you sent in If-None-Match. No body; keep what you have. */
+        NotModified: {
+            headers: {
+                ETag: components["headers"]["ETag"];
+                "TimTim-Request-Id": components["headers"]["RequestId"];
+                [name: string]: unknown;
+            };
+            content?: never;
+        };
         /** @description RFC 6749 §5.2 error — invalid_request, invalid_client, unauthorized_client, unsupported_grant_type or invalid_scope. */
         OAuthError: {
             headers: {
@@ -841,9 +850,11 @@ export interface components {
     parameters: never;
     requestBodies: never;
     headers: {
+        /** @description A short fingerprint of this answer. Send it back as If-None-Match; if the answer has not changed you get 304 with no body. */
+        ETag: string;
         /** @description Send this to TimTim.Live support and we can find your request. */
         RequestId: string;
-        /** @description Requests this key may make per one-minute window. */
+        /** @description Requests allowed in this one-minute window — for a website key, per visitor. */
         RateLimitLimit: number;
         /** @description Requests left in the current window. */
         RateLimitRemaining: number;
@@ -892,6 +903,7 @@ export interface operations {
             200: {
                 headers: {
                     "TimTim-Request-Id": components["headers"]["RequestId"];
+                    ETag: components["headers"]["ETag"];
                     "RateLimit-Limit": components["headers"]["RateLimitLimit"];
                     "RateLimit-Remaining": components["headers"]["RateLimitRemaining"];
                     "RateLimit-Reset": components["headers"]["RateLimitReset"];
@@ -911,6 +923,7 @@ export interface operations {
                     };
                 };
             };
+            304: components["responses"]["NotModified"];
             400: components["responses"]["Problem"];
             401: components["responses"]["Problem"];
             403: components["responses"]["Problem"];
@@ -1190,6 +1203,7 @@ export interface operations {
             200: {
                 headers: {
                     "TimTim-Request-Id": components["headers"]["RequestId"];
+                    ETag: components["headers"]["ETag"];
                     "RateLimit-Limit": components["headers"]["RateLimitLimit"];
                     "RateLimit-Remaining": components["headers"]["RateLimitRemaining"];
                     "RateLimit-Reset": components["headers"]["RateLimitReset"];
@@ -1205,6 +1219,7 @@ export interface operations {
                     };
                 };
             };
+            304: components["responses"]["NotModified"];
             404: components["responses"]["Problem"];
             /** @description The event was withdrawn — it is no longer shared with partners (problem event_withdrawn). Stop showing it. */
             410: {

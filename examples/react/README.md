@@ -1,6 +1,6 @@
 # React example (Vite)
 
-**Developer Preview.** `@timtim-live/react` in a small Vite app: `<TimTimProvider>` plus `<TimTimEvents city="…" />`, with a city picker and a "pretend" picker for bad days (sold out, cancelled, too many requests).
+**Developer Preview.** `@timtim-live/react` in a small Vite app: `<TimTimProvider>` plus `<TimTimEvents city="…" />`. It has a city picker and a "pretend" picker for bad days (sold out, cancelled, too many requests).
 
 The npm package is **not published yet**, so this uses the copy built in this repository.
 

@@ -64,4 +64,4 @@ Online Store 2.0 themes (app blocks need sections everywhere; Dawn and every cur
 
 ## Test plan
 
-`npm test` renders the real block with a Liquid engine (liquidjs): every setting reaches `<timtim-events>`, the store language becomes `lang`, typed values are escaped, a website/test key is written and a server key never is, and the schema has a section target with labelled settings. Before submitting: deploy to a development store and add the block in the theme editor.
+`npm test` renders the real block with a Liquid engine (liquidjs). Every setting reaches `<timtim-events>`, and the store language becomes `lang`. Typed values are escaped. A website or test key is written; a server key never is. The schema has a section target with labelled settings. Before submitting: deploy to a development store and add the block in the theme editor.

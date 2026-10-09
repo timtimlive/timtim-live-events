@@ -45,4 +45,4 @@ Drupal 10 and 11, PHP 8.1+.
 
 ## Test plan
 
-CI lints every PHP file (`php -l`) and runs `php platforms/drupal/test/block_test.php`: defaults, every setting, a website/test key written and a server key never, unknown values dropped, and the library pointing at the hosted embed. Before drupal.org: install on a Drupal 10 and an 11 site and place the block.
+CI lints every PHP file (`php -l`) and runs `php platforms/drupal/test/block_test.php`. It checks defaults and every setting. A website or test key is written; a server key never is. Unknown values are dropped, and the library points at the hosted embed. Before drupal.org: install on a Drupal 10 and an 11 site and place the block.

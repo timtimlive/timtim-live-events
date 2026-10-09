@@ -47,7 +47,7 @@ Ticket links open with `Linking.openURL`, exactly as given — that is how your 
 
 ## Test plan
 
-`npm test` renders the list against a fake API (React Native components replaced by plain host elements): sample badge, price, named ticket button, ticket link opened exactly as given, impression and tap counted, cancelled events without a button, server key refused, http links dropped. `npm run typecheck` checks against the real React Native types.
+`npm test` renders the list against a fake API, with plain host elements in place of React Native components. It checks the sample badge, price, named ticket button and ticket link. It checks that impressions and taps are counted and cancelled events get no button. It checks that a server key is refused and http links are dropped. `npm run typecheck` checks against the real React Native types.
 
 ## License
 

@@ -26,6 +26,10 @@ import { TimTimEvents, TimTimError, type Event, type ListEventsParams, type Simu
  *  - a server key (tt_sk_live_…) is refused by @timtim-live/events in a browser.
  */
 
+/* How long the box waits for an answer, and how many times it tries again (see load()). */
+export const EMBED_TIMEOUT_MS = 8_000;
+export const EMBED_RETRIES = 2;
+
 export interface TimTimEventsLabels {
   loading: string;
   empty: string;
@@ -227,7 +231,12 @@ export class TimTimEventsElement extends Base {
       box.appendChild(el("p", "note", this.labels.loading));
     });
     try {
-      const client = new TimTimEvents({ apiKey: key });
+      /*
+       * A page must not wait 30 seconds on a box of events: give up after 8, and
+       * try a failed read twice more (a short random wait, or the server's
+       * Retry-After when it is at most 4 seconds) before showing the error.
+       */
+      const client = new TimTimEvents({ apiKey: key, timeoutMs: EMBED_TIMEOUT_MS, retries: EMBED_RETRIES, maxRetryDelayMs: 4_000 });
       this.client = client;
       let page;
       if (key) {

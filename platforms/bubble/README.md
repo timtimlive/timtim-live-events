@@ -33,7 +33,7 @@ HTML element:
 <timtim-events location="Paris,FR" category="festival"></timtim-events>
 ```
 
-With the plugin: drop *TimTim Events*, set Location `Paris,FR`, add a workflow "When TimTim Events events_loaded → Show a message: TimTim Events's event_count events".
+With the plugin: drop *TimTim Events* and set Location `Paris,FR`. Then add a workflow: "When TimTim Events events_loaded → Show a message: TimTim Events's event_count events".
 
 ## Settings
 

@@ -25,7 +25,7 @@ Create the module with Location `Miami,US`, Event type Music, Position `sidebar-
 | Show pictures / Show prices | Yes or No |
 | TimTim.Live website key | Optional. Only `tt_pk_live_…` or `tt_test_…` is ever written; a server key is ignored |
 
-The module renders one `<timtim-events>` element (every name and value escaped) and loads the hosted embed through Joomla's Web Asset Manager (`https://timtim.live/embed/v1/timtim-events.js`, deferred). Joomla fetches and stores no event data and needs no secret.
+The module renders one `<timtim-events>` element, with every name and value escaped. It loads the hosted embed through Joomla's Web Asset Manager (`https://timtim.live/embed/v1/timtim-events.js`, deferred). Joomla fetches and stores no event data and needs no secret.
 
 ## Screenshot / demo
 
@@ -43,4 +43,4 @@ Joomla 4 and 5, PHP 8.1+.
 
 ## Test plan
 
-CI lints every PHP file (`php -l`) and runs `php platforms/joomla/test/helper_test.php`: defaults, every setting, limit capped, a website key written and a server key never, unknown values dropped, values escaped, the hosted embed address. Before the JED: install on Joomla 4 and 5 and place the module.
+CI lints every PHP file (`php -l`) and runs `php platforms/joomla/test/helper_test.php`. It checks defaults, every setting and the limit cap. A website key is written; a server key never is. Unknown values are dropped, values are escaped, and the hosted embed address is right. Before the JED: install on Joomla 4 and 5 and place the module.

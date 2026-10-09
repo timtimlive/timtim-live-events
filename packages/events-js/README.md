@@ -25,7 +25,13 @@ const { events, next } = await tt.events.list({ city: "Miami", category: "music"
 const mine = new TimTimEvents({ apiKey: process.env.TIMTIM_KEY });
 ```
 
-Options: `apiKey`, `baseUrl` (default `https://api.timtim.live/v1`), `fetch`, `timeoutMs` (default 30000).
+Options: `apiKey`, `baseUrl` (default `https://api.timtim.live/v1`), `fetch`, `timeoutMs` (default 30000), `retries` (default 0), `maxRetryDelayMs` (default 10000).
+
+**Try again by itself.** Sometimes the internet hiccups. Set `retries: 2` and the client asks up to two more times. It does that when there was no answer, or when TimTim.Live said "busy" (429, 502, 503 or 504). It waits a little longer each time. If TimTim.Live says how long to wait, it waits that long. It never retries a mistake, like a wrong key, and it never repeats an order.
+
+```js
+const tt = new TimTimEvents({ apiKey, retries: 2 });
+```
 
 ### Every page
 
@@ -74,7 +80,7 @@ if (!ok) return res.status(400).end();
 // then skip deliveries you already handled, using the TimTim-Delivery-Id header
 ```
 
-It checks `t=<seconds>,v1=<hex>`: HMAC-SHA256 over `` `${t}.${body}` ``, compared in constant time, and refuses anything more than 300 seconds old (`toleranceS`).
+It checks the seal on each message, and refuses messages more than 300 seconds old (`toleranceS`). You don't need to know how. For the curious: it checks `t=<seconds>,v1=<hex>`, an HMAC-SHA256 over `` `${t}.${body}` ``, compared in constant time.
 
 ### Embedded commerce, results, feeds (server or test keys)
 
@@ -95,11 +101,11 @@ mine.feeds.url("ics", { city: "Paris" }); // website or test key only — a serv
 
 - `tt_sk_live_…` (server key) and `tt_at_…` (OAuth access token) are **refused in a browser**: the constructor throws `secret_key_in_browser`.
 - With no key, only `events.list`, `events.iterate` and `demo.events.list` work; everything else throws `key_required` and tells you where to get a key.
-- With no key, the SDK sends only CORS-safelisted headers, so the demo works from any website.
+- With no key, the demo works on any website. Browsers do not block it, because the SDK sends only headers every browser allows (CORS-safelisted).
 
 ## Types
 
-Every type is generated from the API contract ([`openapi.yaml`](openapi.yaml)) with `openapi-typescript`: `Event`, `EventList`, `Earning`, `Order`, `TicketType`, `Offer`, `Settlement`, `Problem`, `EventChangedMessage`, `EarningsChangedMessage`, and the raw `paths`, `components`, `operations`, `webhooks`.
+Every type is generated from the API contract ([`openapi.yaml`](openapi.yaml)) with `openapi-typescript`. The types are `Event`, `EventList`, `Earning`, `Order`, `TicketType`, `Offer`, `Settlement`, `Problem`, `EventChangedMessage`, `EarningsChangedMessage`, and the raw `paths`, `components`, `operations`, `webhooks`.
 
 ## License
 

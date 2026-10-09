@@ -1,4 +1,4 @@
-import { TimTimError, apiErrorFrom } from "./errors.js";
+import { TimTimApiError, TimTimError, apiErrorFrom } from "./errors.js";
 import type {
   CategoryList,
   CreateOrderBody,
@@ -57,6 +57,33 @@ export interface TimTimEventsOptions {
   fetch?: typeof fetch;
   /** Give up after this many milliseconds. Default 30000. */
   timeoutMs?: number;
+  /**
+   * Try a failed READ again, up to this many times (0–5). Default 0: no retries.
+   * Only GET requests, and only when trying again can help: no answer, a
+   * timeout, 429 (too many requests), 502, 503 or 504. Each wait is longer than
+   * the last, with a random part so many visitors do not all retry at once. If
+   * TimTim.Live says how long to wait (Retry-After), that is the wait.
+   */
+  retries?: number;
+  /** The longest single wait between retries, in milliseconds. Default 10000. A Retry-After longer than this is not waited for: the error is thrown. */
+  maxRetryDelayMs?: number;
+}
+
+/* Statuses where the same request may succeed a moment later. */
+const RETRY_STATUSES = new Set([429, 502, 503, 504]);
+const RETRY_BASE_MS = 500;
+
+/**
+ * How long to wait before retry number `attempt` (0 = the first retry), or null
+ * to stop. A server's Retry-After (seconds) wins when it fits under `maxMs`;
+ * otherwise "full jitter": a random wait up to 500 ms × 2^attempt, capped.
+ */
+export function retryDelayMs(attempt: number, retryAfterS: number | null, maxMs: number, random: () => number = Math.random): number | null {
+  if (retryAfterS !== null) {
+    const ms = Math.max(0, retryAfterS) * 1000;
+    return ms <= maxMs ? ms : null;
+  }
+  return Math.floor(random() * Math.min(maxMs, RETRY_BASE_MS * 2 ** attempt));
 }
 
 type QueryValue = string | number | boolean | null | undefined;
@@ -98,6 +125,8 @@ export class TimTimEvents {
   private readonly apiKey: string | undefined;
   private readonly fetchImpl: typeof fetch;
   private readonly timeoutMs: number;
+  private readonly retries: number;
+  private readonly maxRetryDelayMs: number;
 
   constructor(options: TimTimEventsOptions = {}) {
     const apiKey = typeof options.apiKey === "string" && options.apiKey.trim() !== "" ? options.apiKey.trim() : undefined;
@@ -118,6 +147,8 @@ export class TimTimEvents {
     /* Calling a browser's fetch detached from window throws "Illegal invocation". */
     this.fetchImpl = options.fetch ? options.fetch : (f.bind(globalThis) as typeof fetch);
     this.timeoutMs = options.timeoutMs ?? DEFAULT_TIMEOUT_MS;
+    this.retries = Math.min(5, Math.max(0, Math.floor(options.retries ?? 0)));
+    this.maxRetryDelayMs = Math.max(0, options.maxRetryDelayMs ?? 10_000);
   }
 
   /* ── Events ─────────────────────────────────────────────────────────────── */
@@ -334,7 +365,28 @@ export class TimTimEvents {
     return this.apiKey;
   }
 
+  /** One request, retried per `retries` when it is a GET and trying again can help. */
   private async request<T>(
+    method: "GET" | "POST",
+    path: string,
+    options: { query?: Query; body?: unknown; headers?: Record<string, string>; auth?: boolean } = {},
+  ): Promise<T> {
+    for (let attempt = 0; ; attempt += 1) {
+      try {
+        return await this.requestOnce<T>(method, path, options);
+      } catch (error) {
+        if (method !== "GET" || attempt >= this.retries || !(error instanceof TimTimError)) throw error;
+        const api = error instanceof TimTimApiError ? error : null;
+        const retryable = api ? RETRY_STATUSES.has(api.status) : error.code === "network_error" || error.code === "timeout";
+        if (!retryable) throw error;
+        const wait = retryDelayMs(attempt, api ? api.retryAfter : null, this.maxRetryDelayMs);
+        if (wait === null) throw error;
+        await new Promise((resolve) => setTimeout(resolve, wait));
+      }
+    }
+  }
+
+  private async requestOnce<T>(
     method: "GET" | "POST",
     path: string,
     options: { query?: Query; body?: unknown; headers?: Record<string, string>; auth?: boolean } = {},

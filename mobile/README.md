@@ -8,7 +8,7 @@
 | iOS (Swift) | `TimTimEvents` — async/await client and `Codable` models | [`mobile/ios`](./ios) |
 | Android (Kotlin) | `TimTimEvents` — client and `@Serializable` models | [`mobile/android`](./android) |
 
-The Swift and Kotlin models are checked against the API contract on every change (`npm run check:mobile`): a field added to the API and not to a model fails CI.
+The Swift and Kotlin models are checked against the API contract on every change (`npm run check:mobile`). If the API gets a field a model lacks, the check fails.
 
 **Keys in apps.** Anyone can read an app's files, so a server key (`tt_sk_live_…`) is refused by all three. Use a website key (`tt_pk_live_…`) or test key — or no key for sample events. To use a server key, call TimTim.Live from your own server and give your app the result.
 
@@ -63,7 +63,7 @@ Add `<uses-permission android:name="android.permission.INTERNET" />` to your man
 
 - Swift: `cd mobile/ios && swift test` (CI: macOS).
 - Kotlin: `cd mobile/android && gradle build` (CI: Linux, Java 17).
-- Both decode real answers captured from the API, check the keyless/keyed paths, the server-key refusal, problems with `Retry-After`, an unknown status, and `track`.
+- Both decode real answers captured from the API. They also check keyless and keyed paths, the server-key refusal, problems with `Retry-After`, an unknown status, and `track`.
 - React Native: `npm test` (runs with the rest of the JavaScript packages).
 
 Compatibility: iOS 15+, macOS 12+ (Swift 5.9+). Android: Java 17 bytecode (AGP 8+). React Native 0.72+ / Expo SDK 49+.

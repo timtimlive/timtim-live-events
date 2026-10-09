@@ -21,7 +21,7 @@ A read-only [Model Context Protocol](https://modelcontextprotocol.io) server tha
 | `list_categories` | Which event types have upcoming events |
 | `list_locations` | Which cities have upcoming events |
 
-Every answer keeps the event's **id**, **status**, **TimTim.Live page** and **ticket link** (`tickets.buy_url` — pass it on exactly as it is; it carries your partner credit).
+Every answer keeps the event's **id**, **status**, **TimTim.Live page** and **ticket link** (`tickets.buy_url`). Pass the ticket link on exactly as it is: it carries your partner credit.
 
 It can only read. There is no tool that buys, refunds, changes an event or touches an account.
 
@@ -80,7 +80,7 @@ await server.connect(new StdioServerTransport());
 
 ## Test plan
 
-`npm test` runs the server against a fake API through an in-memory MCP client: the six tools and their read-only marks, keyless vs keyed paths, argument checks (no request is made for a bad one), API problems turned into readable errors, and that id, status, page and ticket link survive into every answer.
+`npm test` runs the server against a fake API, through an in-memory MCP client. It checks the six tools and their read-only marks, and keyless vs keyed paths. It checks arguments (no request is made for a bad one) and turns API problems into readable errors. It also checks that id, status, page and ticket link survive into every answer.
 
 ## License
 

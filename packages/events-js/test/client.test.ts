@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from "vitest";
-import { TimTimApiError, TimTimError, TimTimEvents, toQueryString, parseRetryAfter } from "../src/index.js";
+import { TimTimApiError, TimTimError, TimTimEvents, toQueryString, parseRetryAfter, retryDelayMs } from "../src/index.js";
 import { SAMPLE_EVENT, headersOf, json, list, mockFetch, problem } from "./helpers.js";
 
 const TEST_KEY = "tt_test_example_key";
@@ -311,6 +311,78 @@ describe("errors", () => {
     const { fn } = mockFetch(() => new Response("not json", { status: 200 }));
     const err = await rejection(new TimTimEvents({ fetch: fn }).events.list());
     expect(err.code).toBe("invalid_response");
+  });
+});
+
+describe("retries (opt-in)", () => {
+  const ok = () => json({ object: "list", mode: "test", events: [], next: null });
+
+  it("does not retry by default", async () => {
+    const { fn, calls } = mockFetch(() => problem(503, "unavailable"));
+    const err = await rejection(new TimTimEvents({ apiKey: TEST_KEY, fetch: fn }).events.list());
+    expect((err as TimTimApiError).status).toBe(503);
+    expect(calls).toHaveLength(1);
+  });
+
+  it("retries a GET on 503 and succeeds", async () => {
+    const { fn, calls } = mockFetch((_u, _i, n) => (n < 3 ? problem(503, "unavailable") : ok()));
+    const res = await new TimTimEvents({ apiKey: TEST_KEY, fetch: fn, retries: 2, maxRetryDelayMs: 5 }).events.list();
+    expect(res.events).toEqual([]);
+    expect(calls).toHaveLength(3);
+  });
+
+  it("retries a network failure and a timeout", async () => {
+    let n = 0;
+    const fn = (async () => {
+      n += 1;
+      if (n === 1) throw new TypeError("fetch failed");
+      return ok();
+    }) as typeof fetch;
+    await new TimTimEvents({ apiKey: TEST_KEY, fetch: fn, retries: 1, maxRetryDelayMs: 5 }).events.list();
+    expect(n).toBe(2);
+  });
+
+  it("stops after `retries` and throws the last error", async () => {
+    const { fn, calls } = mockFetch(() => problem(502, "bad_gateway"));
+    const err = await rejection(new TimTimEvents({ apiKey: TEST_KEY, fetch: fn, retries: 2, maxRetryDelayMs: 5 }).events.list());
+    expect((err as TimTimApiError).status).toBe(502);
+    expect(calls).toHaveLength(3);
+  });
+
+  it("never retries a problem that will not change (400, 401, 404)", async () => {
+    for (const status of [400, 401, 404]) {
+      const { fn, calls } = mockFetch(() => problem(status, "nope"));
+      await rejection(new TimTimEvents({ apiKey: TEST_KEY, fetch: fn, retries: 3, maxRetryDelayMs: 5 }).events.list());
+      expect(calls).toHaveLength(1);
+    }
+  });
+
+  it("never retries a POST, even with retries on", async () => {
+    const { fn, calls } = mockFetch(() => problem(503, "unavailable"));
+    await rejection(
+      new TimTimEvents({ apiKey: TEST_KEY, fetch: fn, retries: 3, maxRetryDelayMs: 5 }).orders.create(
+        { event_id: "evt_1", tickets: [{ ticket_type_id: "tt_1", quantity: 1 }] } as never,
+        { idempotencyKey: "order-12345678" } as never,
+      ),
+    );
+    expect(calls).toHaveLength(1);
+  });
+
+  it("waits the server's Retry-After when it fits, and gives up when it does not", async () => {
+    const { fn, calls } = mockFetch(() => problem(429, "rate_limited", {}, { "Retry-After": "30" }));
+    const err = await rejection(new TimTimEvents({ apiKey: TEST_KEY, fetch: fn, retries: 3 }).events.list());
+    expect((err as TimTimApiError).retryAfter).toBe(30);
+    expect(calls).toHaveLength(1);
+  });
+
+  it("retryDelayMs: Retry-After wins under the cap; otherwise a random wait that grows and never passes the cap", () => {
+    expect(retryDelayMs(0, 2, 10_000)).toBe(2000);
+    expect(retryDelayMs(0, 30, 10_000)).toBeNull();
+    expect(retryDelayMs(0, null, 10_000, () => 0.999)).toBeLessThan(500);
+    expect(retryDelayMs(3, null, 10_000, () => 0.999)).toBeGreaterThan(3000);
+    expect(retryDelayMs(3, null, 10_000, () => 0.999)).toBeLessThan(4000);
+    expect(retryDelayMs(20, null, 10_000, () => 0.999)).toBeLessThan(10_000);
+    expect(retryDelayMs(2, null, 10_000, () => 0)).toBe(0);
   });
 });
 

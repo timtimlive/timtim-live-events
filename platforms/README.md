@@ -1,6 +1,6 @@
 # Platform integrations
 
-One embed, many platforms. Every integration here loads the same hosted, open-source `<timtim-events>` (`https://timtim.live/embed/v1/timtim-events.js`) — none fetches events itself, none needs a secret, none asks for platform permissions.
+One embed, many platforms. Every integration here loads the same hosted, open-source `<timtim-events>` (`https://timtim.live/embed/v1/timtim-events.js`). None fetches events itself, none needs a secret, and none asks for platform permissions.
 
 | Platform | Works today | Marketplace listing |
 |---|---|---|
@@ -18,4 +18,4 @@ Make the code for any of them at https://timtim.live/developers/widget, or find 
 
 What each listing still needs: [MARKETPLACES.md](./MARKETPLACES.md).
 
-Tests: `npm test` (Shopify block rendered with Liquid, Framer component, Bubble element, every README and every file checked for the hosted embed and no server key) and the PHP job in CI (Drupal and Joomla rules, `php -l`).
+Tests: `npm test` renders the Shopify block with Liquid, the Framer component and the Bubble element. It checks every README and file for the hosted embed and no server key. The PHP job in CI checks the Drupal and Joomla rules with `php -l`.

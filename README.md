@@ -10,7 +10,7 @@ It puts a list of **live events** — concerts, festivals, parties, talks — on
 
 You say a city, like **Miami**. It shows the events happening there. Each event has a **Get tickets** button. That's it.
 
-There are three pieces in this box:
+Pick the piece that fits what you build:
 
 | Piece | What it is | For |
 |---|---|---|
@@ -61,6 +61,8 @@ Paste this into any web page:
 Open the page. You will see events in Miami. They are **sample events** — each name starts with "TEST EVENT — NO REAL MONEY" — because you have not used a key yet. That is fine for trying.
 
 You can change `data-city` and `data-category`, and add `data-limit`, `data-lang`, `data-color` or `data-key`.
+
+There are two ready-made boxes, and both work. This one line is the simplest. The open-source `<timtim-events>` tag does the same job with more settings. TimTim.Live hosts it at `https://timtim.live/embed/v1/timtim-events.js` ([how](packages/web-component)).
 
 ### 2. The SDK (after `npm run build`, or once it is on npm)
 
@@ -171,7 +173,7 @@ SDKs, widgets, adapters, examples and public API specifications.
 
 ### What is not included
 
-The hosted TimTim.Live Event API implementation, production databases, ticketing backend, checkout systems, attribution systems, payouts, fraud systems, customer data, infrastructure and proprietary business logic are not part of this repository.
+This code shows events. It does not include TimTim.Live's own servers. Tickets, payments, payouts, fraud checks and everyone's private data stay with TimTim.Live. You reach them through the API.
 
 These tools connect to the hosted TimTim.Live API at:
 

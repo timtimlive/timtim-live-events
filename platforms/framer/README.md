@@ -43,4 +43,4 @@ Framer sites with code components (React 18+).
 
 ## Test plan
 
-`npm test` renders the component with Framer's API replaced by a stand-in: the property controls, settings reaching `<timtim-events>`, updates when a setting changes, the hosted embed loaded once, no server key passed, non-hex colors dropped.
+`npm test` renders the component with a stand-in for Framer's API. It checks the property controls, settings reaching `<timtim-events>`, and updates when a setting changes. It checks that the hosted embed loads once, no server key is passed and non-hex colors are dropped.

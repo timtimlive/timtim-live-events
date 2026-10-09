@@ -207,6 +207,20 @@ describe("<timtim-events>", () => {
     expect(calls).toHaveLength(2);
   });
 
+  it("tries a failed read again by itself before showing an error (a 503, then events)", async () => {
+    let n = 0;
+    respond = () => {
+      n += 1;
+      return n === 1
+        ? new Response(JSON.stringify({ type: "about:blank", title: "Busy.", status: 503, detail: "", request_id: "req_y", code: "unavailable" }), { status: 503 })
+        : page([EVENT]);
+    };
+    const node = mount({ city: "Miami" });
+    await vi.waitFor(() => expect(shadow(node).querySelectorAll("li")).toHaveLength(1), { timeout: 3000 });
+    expect(shadow(node).querySelector("[role=alert]")).toBeNull();
+    expect(calls.filter((c) => !c.url.includes("/track"))).toHaveLength(2);
+  });
+
   it("reads location as city and country, and partner as the key", async () => {
     const node = mount({ location: "Port-au-Prince, ht", partner: "tt_pk_live_example_key" });
     await settled(node);

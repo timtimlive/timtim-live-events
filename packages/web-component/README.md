@@ -18,7 +18,7 @@ With a bundler (once published):
 import "@timtim-live/web-component";
 ```
 
-Or with no install at all — TimTim.Live hosts this exact build (the same bytes as `dist/timtim-events.global.js`, made by `npm run build`) at a stable address:
+Or install nothing at all. TimTim.Live hosts this exact build at a stable address (the same bytes `npm run build` makes in `dist/timtim-events.global.js`):
 
 ```html
 <script src="https://timtim.live/embed/v1/timtim-events.js" defer></script>
@@ -47,7 +47,7 @@ Changing any attribute fetches again. Events: `timtim-events-loaded` (`detail.ev
 
 ## Tracking
 
-So your dashboard can show how many people saw your events and clicked them, the element tells TimTim.Live (`POST /v1/track`): one `impression` when events are shown, an `event_view` when a card comes into view, an `event_click` when "Get tickets" is pressed. It is sent with `navigator.sendBeacon`, never delays or breaks the list, and carries no cookie and nothing about the visitor — only the event id, your key and a random id made once per page load. It is never money: sales are recorded by TimTim.Live itself. Nothing is sent with `tracking="off"` or while `simulate` is set.
+The element tells TimTim.Live (`POST /v1/track`) what people saw and clicked, so your dashboard can count it. It sends one `impression` when events are shown. It sends an `event_view` when a card comes into view, and an `event_click` when "Get tickets" is pressed. It is sent with `navigator.sendBeacon` and never delays or breaks the list. It carries no cookie and nothing about the visitor. It carries only the event id, your key and a random id made once per page load. It is never money: sales are recorded by TimTim.Live itself. Nothing is sent with `tracking="off"` or while `simulate` is set.
 
 ## Safety and access
 
