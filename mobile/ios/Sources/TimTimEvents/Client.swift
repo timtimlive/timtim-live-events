@@ -7,6 +7,8 @@ import FoundationNetworking
 public enum TimTimError: Error, Equatable, CustomStringConvertible {
     /// A server key (tt_sk_live_…) or access token in an app: anyone can read an app's files, so it is refused.
     case serverKeyInApp
+    /// The base URL is not https. Plain http is allowed only for local testing (localhost, 127.0.0.1, 10.0.2.2).
+    case insecureBaseURL(String)
     case keyRequired(String)
     case api(status: Int, code: String?, title: String, detail: String, requestId: String?, retryAfter: Int?)
     case invalidResponse(Int)
@@ -15,6 +17,7 @@ public enum TimTimError: Error, Equatable, CustomStringConvertible {
     public var description: String {
         switch self {
         case .serverKeyInApp: return "Never put a server key (tt_sk_live_…) in an app. Use a website key (tt_pk_live_…) or call TimTim.Live from your own server."
+        case .insecureBaseURL(let url): return "The base URL must start with https:// (plain http only for localhost, 127.0.0.1 or 10.0.2.2 while testing). Got: \(url)"
         case .keyRequired(let what): return "\(what) needs a key. Get a free test key at https://timtim.live/partners/dashboard."
         case let .api(status, _, title, detail, requestId, _): return "\(status) \(title) \(detail)" + (requestId.map { " (request \($0))" } ?? "")
         case .invalidResponse(let status): return "TimTim.Live answered \(status) but not with JSON."
@@ -70,6 +73,8 @@ public struct TimTimEvents: Sendable {
 
     public init(apiKey: String? = nil, baseURL: URL = TimTimEvents.defaultBaseURL, session: URLSession = .shared) throws {
         if let key = apiKey, key.hasPrefix("tt_sk_live_") || key.hasPrefix("tt_at_") { throw TimTimError.serverKeyInApp }
+        /* A key travels in every request: never over plain http, except to a server on this machine or the Android emulator's host. */
+        guard TimTimEvents.isAllowedBaseURL(baseURL) else { throw TimTimError.insecureBaseURL(baseURL.absoluteString) }
         self.apiKey = (apiKey?.isEmpty ?? true) ? nil : apiKey
         self.baseURL = baseURL
         self.session = session
@@ -83,8 +88,8 @@ public struct TimTimEvents: Sendable {
     /// One event, even after it was cancelled or ended. Needs a key.
     public func event(id: String) async throws -> Event {
         guard apiKey != nil else { throw TimTimError.keyRequired("event(id:)") }
-        let escaped = id.addingPercentEncoding(withAllowedCharacters: .alphanumerics.union(CharacterSet(charactersIn: "-_"))) ?? id
-        let response: EventResponse = try await get("events/\(escaped)", [])
+        /* Encoded exactly once, here; get() puts it into the path as it is (no second encoding of the %). */
+        let response: EventResponse = try await get("events/\(TimTimEvents.encodePathSegment(id))", [])
         return response.event
     }
 
@@ -130,8 +135,48 @@ public struct TimTimEvents: Sendable {
         return d
     }
 
+    static let localHosts: Set<String> = ["localhost", "127.0.0.1", "10.0.2.2"]
+
+    /// https anywhere; plain http only to localhost, 127.0.0.1 or 10.0.2.2 (the Android emulator's name for this computer).
+    static func isAllowedBaseURL(_ url: URL) -> Bool {
+        guard let scheme = url.scheme?.lowercased(), let host = url.host?.lowercased(), !host.isEmpty else { return false }
+        return scheme == "https" || (scheme == "http" && localHosts.contains(host))
+    }
+
+    /// RFC 3986 unreserved letters stay; everything else (including "/", "%", "." and non-ASCII) becomes %XX of its UTF-8 bytes.
+    static func encodePathSegment(_ value: String) -> String {
+        let keep = Set("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_~".utf8)
+        let hex = Array("0123456789ABCDEF")
+        var out = ""
+        for byte in value.utf8 {
+            if keep.contains(byte) {
+                out.append(Character(Unicode.Scalar(byte)))
+            } else {
+                out.append("%"); out.append(hex[Int(byte >> 4)]); out.append(hex[Int(byte & 0x0F)])
+            }
+        }
+        return out
+    }
+
+    /// Retry-After is either seconds ("30") or an HTTP-date ("Wed, 21 Oct 2026 07:28:00 GMT"). Whole seconds to wait, never negative.
+    static func retryAfterSeconds(_ value: String?, now: Date = Date()) -> Int? {
+        guard let raw = value?.trimmingCharacters(in: .whitespaces), !raw.isEmpty else { return nil }
+        if let seconds = Int(raw) { return max(0, seconds) }
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.timeZone = TimeZone(identifier: "GMT")
+        formatter.dateFormat = "EEE, dd MMM yyyy HH:mm:ss zzz"
+        guard let date = formatter.date(from: raw) else { return nil }
+        let wait = date.timeIntervalSince(now).rounded(.up)
+        return wait <= 0 ? 0 : Int(min(wait, Double(Int32.max)))
+    }
+
+    /// `path` is already percent-encoded (see encodePathSegment); it is appended as it is, so nothing is encoded twice.
     private func get<T: Decodable>(_ path: String, _ query: [URLQueryItem]) async throws -> T {
-        var components = URLComponents(url: baseURL.appendingPathComponent(path), resolvingAgainstBaseURL: false)!
+        var components = URLComponents(url: baseURL, resolvingAgainstBaseURL: false)!
+        var basePath = components.percentEncodedPath
+        while basePath.hasSuffix("/") { basePath.removeLast() }
+        components.percentEncodedPath = basePath + "/" + path
         if !query.isEmpty { components.queryItems = query }
         var request = URLRequest(url: components.url!)
         request.setValue("application/json", forHTTPHeaderField: "Accept")
@@ -146,7 +191,7 @@ public struct TimTimEvents: Sendable {
         }
         let status = (response as? HTTPURLResponse)?.statusCode ?? 0
         guard (200..<300).contains(status) else {
-            let retry = (response as? HTTPURLResponse)?.value(forHTTPHeaderField: "Retry-After").flatMap { Int($0) }
+            let retry = TimTimEvents.retryAfterSeconds((response as? HTTPURLResponse)?.value(forHTTPHeaderField: "Retry-After"))
             if let p = try? TimTimEvents.decoder.decode(Problem.self, from: data) {
                 throw TimTimError.api(status: status, code: p.code, title: p.title, detail: p.detail, requestId: p.requestId, retryAfter: retry)
             }

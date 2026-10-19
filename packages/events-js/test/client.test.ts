@@ -237,6 +237,22 @@ describe("feeds.url", () => {
     const tt = new TimTimEvents({ apiKey: TEST_KEY, fetch: mockFetch(() => json({})).fn });
     expect(() => tt.feeds.url("html" as never)).toThrow(expect.objectContaining({ code: "invalid_argument" }));
   });
+
+  it("never lets params.key replace the checked key, so a server key cannot reach a URL", () => {
+    const tt = new TimTimEvents({ apiKey: TEST_KEY, fetch: mockFetch(() => json({})).fn });
+    const sneaky = { key: SK_KEY, city: "Paris" } as never;
+    let url: string | undefined;
+    let error: unknown;
+    try {
+      url = tt.feeds.url("rss", sneaky);
+    } catch (e) {
+      error = e;
+    }
+    /* Either outcome must hold: no server key in any URL, and the refusal names the problem. */
+    expect(url ?? "").not.toContain(SK_KEY);
+    expect(error).toMatchObject({ code: "invalid_argument" });
+    expect(() => tt.feeds.url("rss", { key: undefined } as never)).toThrow(expect.objectContaining({ code: "invalid_argument" }));
+  });
 });
 
 describe("errors", () => {

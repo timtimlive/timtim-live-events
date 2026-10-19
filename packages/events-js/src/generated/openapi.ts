@@ -13,7 +13,7 @@ export interface paths {
         };
         /**
          * Find events
-         * @description Upcoming events you may show, oldest first. With `changed_since`, every event that changed after that time, including ones that ended or were cancelled.
+         * @description Upcoming events you may show, oldest first. "Upcoming" is decided on each event's own local date and time zone, so an event tonight in the Americas is still listed after midnight UTC. With `changed_since`, every event that changed after that time, including ones that ended or were cancelled. Times are compared to the millisecond.
          */
         get: operations["listEvents"];
         put?: never;
@@ -218,7 +218,7 @@ export interface paths {
         };
         /**
          * Your results
-         * @description Sales that came through your buy links and what they earned. Never a buyer's name, email, address, phone or card. Needs a server key (tt_sk_live_) or a test key.
+         * @description Sales that came through your buy links and what they earned. Never a buyer's name, email, address, phone or card. Needs a server key (tt_sk_live_) or a test key. `totals` counts every sale you have; `earnings` lists the newest 500, and `notices` says so when there are more (use the earnings.changed webhook to keep a full copy).
          */
         get: operations["listEarnings"];
         put?: never;
@@ -303,9 +303,12 @@ export interface paths {
          *     account. Open it for the buyer (a new tab or an in-app browser). Card
          *     details never pass through the API. The sale is credited to your company
          *     directly — no click, no cookie, no postback — under the same rules and
-         *     limits as a buy_url. Send an `Idempotency-Key`: the same key returns the
-         *     same order, never a second hold. Server keys only; same access rules as
-         *     /events/{id}/tickets.
+         *     limits as a buy_url. Send an `Idempotency-Key`: the same key with the same
+         *     body returns the same order (its `checkout_url` only while it can still be
+         *     paid), never a second hold. The same key with a DIFFERENT body is refused
+         *     with 409 `idempotency_conflict`. Keys are yours alone: another company
+         *     using the same key never meets your order. Server keys only; same access
+         *     rules as /events/{id}/tickets.
          */
         post: operations["createOrder"];
         delete?: never;
@@ -808,6 +811,7 @@ export interface components {
             status: number;
             detail: string;
             request_id: string;
+            /** @description A stable name for what went wrong, e.g. invalid_cursor, idempotency_conflict. */
             code: string;
             /** @description 405 only: the methods this address answers (also in the Allow header). */
             allowed?: string[];
@@ -917,7 +921,7 @@ export interface operations {
                         mode: "test" | "live";
                         events: components["schemas"]["Event"][];
                         next: string | null;
-                        /** @description Only when you send changed_since. Events you may have shown that are no longer shared with partners, withdrawn after that time — stop showing each id. Up to 500; if you get 500, ask again with changed_since set to the last withdrawn_at. Never says why. Always empty for a test key. */
+                        /** @description Only when you send changed_since. Events you may have shown that are no longer shared with partners, withdrawn after that time — stop showing each id. Up to 5,000. If there are more, `notices` says so: ask again with changed_since set to one millisecond before the last withdrawn_at (an id you already removed may come again). Never says why. Always empty for a test key. */
                         withdrawn?: components["schemas"]["Withdrawn"][];
                         notices?: string[];
                     };
@@ -944,6 +948,10 @@ export interface operations {
                 /** @example Paris,FR */
                 near?: string;
                 artist?: string;
+                lat?: number;
+                lng?: number;
+                /** @description Kilometres. */
+                radius?: number;
                 limit?: number;
                 cursor?: string;
                 /** @description Sandbox only. See above. */
@@ -1367,8 +1375,31 @@ export interface operations {
                 };
             };
             400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
             403: components["responses"]["Problem"];
-            409: components["responses"]["Problem"];
+            /** @description The event is not one you may sell (problem event_not_found). */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /**
+             * @description ticket_not_available — that ticket cannot be bought right now; or
+             *     idempotency_conflict — this Idempotency-Key was already used for a different order
+             *     (or the first request with it is still being made: send it again in a few seconds).
+             */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            429: components["responses"]["Problem"];
             503: components["responses"]["Problem"];
         };
     };

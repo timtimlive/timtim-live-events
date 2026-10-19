@@ -150,6 +150,8 @@ export class TimTimEventsElement extends Base {
   }
 
   disconnectedCallback(): void {
+    /* A load still in flight belongs to a box that is gone: when it finishes it must not draw, watch or count. */
+    this.sequence += 1;
     this.observer?.disconnect();
     this.observer = null;
   }
@@ -203,14 +205,21 @@ export class TimTimEventsElement extends Base {
     return this.attr(name)?.toLowerCase() !== "false";
   }
 
-  /* No signals for a simulated bad day: it is a developer rehearsing, not a visitor. */
-  private tracking(): boolean {
-    return this.attr("tracking")?.toLowerCase() !== "off" && !this.attr("simulate");
+  /** The simulated bad day in use: only without a key (a key reads real events and ignores `simulate`), and only a known one. */
+  private simulation(): Simulation | undefined {
+    if (this.key()) return undefined;
+    const sim = this.attr("simulate") as Simulation | undefined;
+    return sim && SIMULATIONS.includes(sim) ? sim : undefined;
   }
 
-  /* Fire-and-forget: a failed signal is ignored, never shown, never retried. */
+  /* No signals for a simulated bad day: it is a developer rehearsing, not a visitor. */
+  private tracking(): boolean {
+    return this.attr("tracking")?.toLowerCase() !== "off" && !this.simulation();
+  }
+
+  /* Fire-and-forget: a failed signal is ignored, never shown, never retried. Nothing is sent from a box no longer on the page. */
   private signal(type: "impression" | "event_view" | "event_click", eventId?: string, shown?: number): void {
-    if (!this.client || !this.tracking()) return;
+    if (!this.client || !this.isConnected || !this.tracking()) return;
     void this.client.track({ type, view: this.viewId, ...(eventId ? { event_id: eventId } : {}), ...(shown != null ? { shown } : {}) }).catch(() => {});
   }
 
@@ -242,16 +251,16 @@ export class TimTimEventsElement extends Base {
       if (key) {
         page = await client.events.list(this.params());
       } else {
-        const sim = this.attr("simulate") as Simulation | undefined;
-        page = await client.demo.events.list({ ...this.params(), simulate: sim && SIMULATIONS.includes(sim) ? sim : undefined });
+        page = await client.demo.events.list({ ...this.params(), simulate: this.simulation() });
       }
-      if (seq !== this.sequence) return; /* a newer request replaced this one */
+      /* A newer request replaced this one, or the box was taken off the page while it loaded. */
+      if (seq !== this.sequence || !this.isConnected) return;
       this.events = page.events;
       this.drawEvents(page.events);
       if (page.events.length) this.signal("impression", undefined, page.events.length);
       this.dispatchEvent(new CustomEvent("timtim-events-loaded", { detail: { events: page.events } }));
     } catch (error) {
-      if (seq !== this.sequence) return;
+      if (seq !== this.sequence || !this.isConnected) return;
       this.events = [];
       this.drawError(error);
       this.dispatchEvent(new CustomEvent("timtim-events-error", { detail: { error } }));
@@ -342,11 +351,12 @@ export class TimTimEventsElement extends Base {
         const body = el("div", "body");
         const badges = el("div", "badges");
         if (e.test) badges.appendChild(el("span", "badge", L.sample));
-        const statusLabel = e.status !== "scheduled" ? L.status[e.status] : undefined;
-        if (statusLabel) badges.appendChild(el("span", "badge status", statusLabel));
+        /* Own properties only: a status such as "constructor" or "toString" must not find Object's methods. */
+        const statusLabel = e.status !== "scheduled" && Object.prototype.hasOwnProperty.call(L.status, e.status) ? L.status[e.status] : undefined;
+        if (typeof statusLabel === "string" && statusLabel) badges.appendChild(el("span", "badge status", statusLabel));
         if (badges.childNodes.length) body.appendChild(badges);
         body.appendChild(el("h3", "name", e.name));
-        const when = lang.toLowerCase().startsWith("en") && e.display?.date_label ? e.display.date_label : dateFmt && e.date ? dateFmt.format(new Date(`${e.date}T12:00:00Z`)) : e.display?.date_label;
+        const when = lang.toLowerCase().startsWith("en") && e.display?.date_label ? e.display.date_label : formatDay(dateFmt, e.date) ?? e.display?.date_label;
         const where = [e.location?.venue, e.location?.city].filter(Boolean).join(", ");
         const meta = [when, where].filter(Boolean).join(" · ");
         if (meta) body.appendChild(el("p", "meta", meta));
@@ -376,7 +386,7 @@ export class TimTimEventsElement extends Base {
 
   /** event_view once per card per page load, when at least half of it is on screen. */
   private watchViews(): void {
-    if (!this.tracking() || typeof IntersectionObserver !== "function") return;
+    if (!this.isConnected || !this.tracking() || typeof IntersectionObserver !== "function") return;
     this.observer = new IntersectionObserver((entries) => {
       for (const entry of entries) {
         const id = (entry.target as HTMLElement).dataset.eventId;
@@ -387,6 +397,22 @@ export class TimTimEventsElement extends Base {
       }
     }, { threshold: 0.5 });
     for (const card of this.root.querySelectorAll<HTMLElement>("article[data-event-id]")) this.observer.observe(card);
+  }
+}
+
+/**
+ * "2026-10-14" → "Wed, Oct 14" in the visitor's language, or null. One bad
+ * date (malformed, or a day Intl cannot show) leaves that one card without a
+ * date; it never turns the whole list into the error state.
+ */
+function formatDay(fmt: Intl.DateTimeFormat | null, date: unknown): string | null {
+  if (!fmt || typeof date !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(date)) return null;
+  const d = new Date(`${date}T12:00:00Z`);
+  if (Number.isNaN(d.getTime())) return null;
+  try {
+    return fmt.format(d);
+  } catch {
+    return null;
   }
 }
 

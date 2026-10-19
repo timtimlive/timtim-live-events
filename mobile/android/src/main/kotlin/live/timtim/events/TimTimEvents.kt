@@ -7,11 +7,18 @@ import java.io.IOException
 import java.net.HttpURLConnection
 import java.net.URI
 import java.net.URLEncoder
+import java.time.Duration
+import java.time.Instant
+import java.time.ZonedDateTime
+import java.time.format.DateTimeFormatter
+import java.time.format.DateTimeParseException
 
 /** Something went wrong. [Api] carries TimTim.Live's own explanation. */
 public sealed class TimTimException(message: String) : Exception(message) {
     /** A server key (tt_sk_live_…) or access token in an app: anyone can read an app's files, so it is refused. */
     public class ServerKeyInApp : TimTimException("Never put a server key (tt_sk_live_…) in an app. Use a website key (tt_pk_live_…) or call TimTim.Live from your own server.")
+    /** The base URL is not https. Plain http is allowed only for local testing (localhost, 127.0.0.1, 10.0.2.2). */
+    public class InsecureBaseUrl(url: String) : TimTimException("The base URL must start with https:// (plain http only for localhost, 127.0.0.1 or 10.0.2.2 while testing). Got: $url")
     public class KeyRequired(what: String) : TimTimException("$what needs a key. Get a free test key at https://timtim.live/partners/dashboard.")
     public class Api(public val status: Int, public val code: String?, public val title: String, public val detail: String, public val requestId: String?, public val retryAfter: Int?) :
         TimTimException("$status $title $detail" + (requestId?.let { " (request $it)" } ?: ""))
@@ -55,6 +62,8 @@ public object UrlConnectionTransport : HttpTransport {
         val conn = URI(request.url).toURL().openConnection() as HttpURLConnection
         try {
             conn.requestMethod = request.method
+            // Never follow a redirect: it could carry the Authorization header to another host, or downgrade to http.
+            conn.instanceFollowRedirects = false
             conn.connectTimeout = 10_000
             conn.readTimeout = 15_000
             request.headers.forEach { (k, v) -> conn.setRequestProperty(k, v) }
@@ -92,6 +101,8 @@ public class TimTimEvents(
 
     init {
         if (this.apiKey != null && (this.apiKey.startsWith("tt_sk_live_") || this.apiKey.startsWith("tt_at_"))) throw TimTimException.ServerKeyInApp()
+        // A key travels in every request: never over plain http, except to this machine or the Android emulator's host.
+        if (!isAllowedBaseUrl(baseUrl)) throw TimTimException.InsecureBaseUrl(baseUrl)
     }
 
     /** One page of events. With no key: sample events from /demo/events. */
@@ -100,7 +111,7 @@ public class TimTimEvents(
     /** One event, even after it was cancelled or ended. Needs a key. */
     public fun event(id: String): Event {
         if (apiKey == null) throw TimTimException.KeyRequired("event(id)")
-        return get<EventResponse>("events/" + URLEncoder.encode(id, "UTF-8"), emptyList()).event
+        return get<EventResponse>("events/" + encodePathSegment(id), emptyList()).event
     }
 
     /** Event types with upcoming events, and how many. */
@@ -144,7 +155,7 @@ public class TimTimEvents(
         if (response.status !in 200..299) {
             val problem = runCatching { json.decodeFromString<Problem>(response.body) }.getOrNull()
                 ?: throw TimTimException.InvalidResponse(response.status)
-            val retry = response.headers.entries.firstOrNull { it.key.equals("retry-after", ignoreCase = true) }?.value?.toIntOrNull()
+            val retry = response.headers.entries.firstOrNull { it.key.equals("retry-after", ignoreCase = true) }?.value.let { retryAfterSeconds(it) }
             throw TimTimException.Api(response.status, problem.code, problem.title, problem.detail, problem.requestId, retry)
         }
         return try {
@@ -158,5 +169,38 @@ public class TimTimEvents(
         public const val DEFAULT_BASE_URL: String = "https://api.timtim.live/v1"
         public const val VERSION: String = "0.1.0"
         internal val json: Json = Json { ignoreUnknownKeys = true; explicitNulls = false }
+        private val LOCAL_HOSTS = setOf("localhost", "127.0.0.1", "10.0.2.2")
+        private const val HEX = "0123456789ABCDEF"
+
+        /** https anywhere; plain http only to localhost, 127.0.0.1 or 10.0.2.2 (the Android emulator's name for this computer). */
+        internal fun isAllowedBaseUrl(url: String): Boolean {
+            val uri = try { URI(url) } catch (_: Exception) { return false }
+            val scheme = uri.scheme?.lowercase() ?: return false
+            val host = uri.host?.lowercase()?.takeIf { it.isNotEmpty() } ?: return false
+            return scheme == "https" || (scheme == "http" && host in LOCAL_HOSTS)
+        }
+
+        /** One path segment: RFC 3986 unreserved letters stay, everything else (space, "/", "%", ".", "+", non-ASCII) becomes %XX. Never "+" for a space. */
+        internal fun encodePathSegment(value: String): String = buildString {
+            for (b in value.toByteArray(Charsets.UTF_8)) {
+                val c = b.toInt() and 0xff
+                val ch = c.toChar()
+                if (ch in 'A'..'Z' || ch in 'a'..'z' || ch in '0'..'9' || ch == '-' || ch == '_' || ch == '~') append(ch)
+                else append('%').append(HEX[c shr 4]).append(HEX[c and 0x0f])
+            }
+        }
+
+        /** Retry-After is seconds ("30") or an HTTP-date ("Wed, 21 Oct 2026 07:28:00 GMT"). Whole seconds to wait, never negative. */
+        internal fun retryAfterSeconds(value: String?, now: Instant = Instant.now()): Int? {
+            val raw = value?.trim()?.takeIf { it.isNotEmpty() } ?: return null
+            raw.toIntOrNull()?.let { return it.coerceAtLeast(0) }
+            return try {
+                val at = ZonedDateTime.parse(raw, DateTimeFormatter.RFC_1123_DATE_TIME).toInstant()
+                val ms = Duration.between(now, at).toMillis()
+                if (ms <= 0) 0 else ((ms + 999) / 1000).coerceAtMost(Int.MAX_VALUE.toLong()).toInt()
+            } catch (_: DateTimeParseException) {
+                null
+            }
+        }
     }
 }

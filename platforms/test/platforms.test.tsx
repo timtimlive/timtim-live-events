@@ -4,7 +4,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import { Liquid } from "liquidjs";
 import { cleanup, render } from "@testing-library/react";
 import TimTimEvents, { EMBED_SRC, embedAttributes } from "../framer/TimTimEvents.js";
-import { registered } from "./framer-stub.js";
+import { registered, setRenderTarget } from "./framer-stub.js";
 
 /* happy-dom replaces the global URL, so the folder comes from Node directly. */
 const here = join(import.meta.dirname, "..");
@@ -79,6 +79,19 @@ describe("Framer code component", () => {
     expect(container.querySelector("timtim-events")!.hasAttribute("layout")).toBe(false);
     expect(document.querySelectorAll(`script[src="${HOSTED}"]`)).toHaveLength(1);
     expect(EMBED_SRC).toBe(HOSTED);
+  });
+
+  it("sends no tracking from Framer's editor canvas, only from Preview and the live site", () => {
+    setRenderTarget("CANVAS");
+    try {
+      const { container, rerender } = render(<TimTimEvents {...TimTimEvents.defaultProps} />);
+      expect(container.querySelector("timtim-events")!.getAttribute("tracking")).toBe("off");
+      setRenderTarget("PREVIEW");
+      rerender(<TimTimEvents {...TimTimEvents.defaultProps} location="Paris,FR" />);
+      expect(container.querySelector("timtim-events")!.hasAttribute("tracking")).toBe(false);
+    } finally {
+      setRenderTarget("PREVIEW");
+    }
   });
 
   it("never passes a server key, and drops a non-hex color", () => {

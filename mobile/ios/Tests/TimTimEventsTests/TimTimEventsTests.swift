@@ -104,6 +104,41 @@ final class TimTimEventsTests: XCTestCase {
         }
     }
 
+    func testAPlainHttpBaseURLIsRefusedExceptForLocalTesting() throws {
+        XCTAssertThrowsError(try TimTimEvents(baseURL: URL(string: "http://api.timtim.live/v1")!)) {
+            XCTAssertEqual($0 as? TimTimError, .insecureBaseURL("http://api.timtim.live/v1"))
+        }
+        XCTAssertThrowsError(try TimTimEvents(baseURL: URL(string: "ftp://api.timtim.live/v1")!))
+        XCTAssertNoThrow(try TimTimEvents(baseURL: URL(string: "https://api.timtim.live/v1")!))
+        XCTAssertNoThrow(try TimTimEvents(baseURL: URL(string: "http://localhost:3000/v1")!))
+        XCTAssertNoThrow(try TimTimEvents(baseURL: URL(string: "http://127.0.0.1:3000/v1")!))
+        XCTAssertNoThrow(try TimTimEvents(baseURL: URL(string: "http://10.0.2.2:3000/v1")!))
+    }
+
+    func testAnEventIdIsPercentEncodedExactlyOnce() async throws {
+        let body = Data(#"{"object":"event","mode":"test","event":null}"#.utf8)
+        StubProtocol.respond = { _ in (200, [:], body) }
+        let timtim = try TimTimEvents(apiKey: "tt_test_example_key", session: session)
+        _ = try? await timtim.event(id: "a b/c%é")
+        let request = try XCTUnwrap(StubProtocol.seen.first)
+        XCTAssertEqual(request.url?.absoluteString, "https://api.timtim.live/v1/events/a%20b%2Fc%25%C3%A9")
+        XCTAssertEqual(TimTimEvents.encodePathSegment("evt_test-1"), "evt_test-1")
+        XCTAssertEqual(TimTimEvents.encodePathSegment(".."), "%2E%2E")
+    }
+
+    func testRetryAfterReadsSecondsOrAnHttpDate() {
+        let now = Date(timeIntervalSince1970: 1_800_000_000)
+        XCTAssertEqual(TimTimEvents.retryAfterSeconds("30", now: now), 30)
+        let later = DateFormatter()
+        later.locale = Locale(identifier: "en_US_POSIX")
+        later.timeZone = TimeZone(identifier: "GMT")
+        later.dateFormat = "EEE, dd MMM yyyy HH:mm:ss 'GMT'"
+        XCTAssertEqual(TimTimEvents.retryAfterSeconds(later.string(from: now.addingTimeInterval(120)), now: now), 120)
+        XCTAssertEqual(TimTimEvents.retryAfterSeconds(later.string(from: now.addingTimeInterval(-60)), now: now), 0)
+        XCTAssertNil(TimTimEvents.retryAfterSeconds("soon", now: now))
+        XCTAssertNil(TimTimEvents.retryAfterSeconds(nil, now: now))
+    }
+
     func testTrackSendsAPublicKeyAndNeverThrows() async throws {
         StubProtocol.respond = { _ in (204, [:], Data()) }
         let timtim = try TimTimEvents(apiKey: "tt_pk_live_example_key", session: session)

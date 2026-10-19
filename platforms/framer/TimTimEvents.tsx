@@ -13,7 +13,7 @@
  * (tt_sk_live_…) is never passed to the page.
  */
 import { useEffect, useRef } from "react";
-import { addPropertyControls, ControlType } from "framer";
+import { addPropertyControls, ControlType, RenderTarget } from "framer";
 
 export const EMBED_SRC = "https://timtim.live/embed/v1/timtim-events.js";
 
@@ -59,9 +59,17 @@ function loadEmbed(): void {
  * @framerSupportedLayoutWidth any
  * @framerSupportedLayoutHeight auto
  */
+/** True while a designer is editing (the canvas, a thumbnail or an export) — not a visitor on the live site or Preview. */
+function inEditor(): boolean {
+    const now = RenderTarget.current();
+    return now === RenderTarget.canvas || now === RenderTarget.thumbnail || now === RenderTarget.export;
+}
+
 export default function TimTimEvents(props: TimTimEventsProps) {
     const box = useRef<HTMLDivElement>(null);
     const attrs = embedAttributes(props);
+    /* A designer looking at the canvas is not a visitor: the partner's dashboard must not count it. */
+    if (inEditor()) attrs.tracking = "off";
     const key = JSON.stringify(attrs);
 
     useEffect(() => {

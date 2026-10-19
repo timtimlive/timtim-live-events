@@ -346,7 +346,15 @@ export class TimTimEvents {
       if (!["json", "rss", "xml", "csv", "ics"].includes(format)) {
         throw new TimTimError("invalid_argument", `feeds.url(): format must be json, rss, xml, csv or ics (got "${String(format)}").`);
       }
-      return `${this.baseUrl}/feeds/events.${format}${toQueryString({ key, ...params } as Query)}`;
+      /* The key is always the checked one above: a `key` in params (possible from plain JS or a cast) is refused, never used. */
+      if (params && Object.prototype.hasOwnProperty.call(params, "key")) {
+        throw new TimTimError("invalid_argument", "feeds.url(): do not pass `key` in params. The client's own key is added for you (and only a website or test key may go in a URL).");
+      }
+      /* key first in the URL (as before), params next, then key again so nothing in params can replace it. */
+      const query: Query = { key };
+      Object.assign(query, params);
+      query.key = key;
+      return `${this.baseUrl}/feeds/events.${format}${toQueryString(query)}`;
     },
   };
 

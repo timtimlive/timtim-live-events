@@ -258,6 +258,58 @@ describe("<timtim-events>", () => {
     expect(beacons).toHaveLength(0);
   });
 
+  it("a box removed while loading draws nothing, watches nothing and counts nothing", async () => {
+    let release!: (r: Response) => void;
+    respond = () => new Promise<Response>((r) => (release = r)) as unknown as Response;
+    let observers = 0;
+    vi.stubGlobal("IntersectionObserver", class {
+      constructor() {
+        observers += 1;
+      }
+      observe() {}
+      unobserve() {}
+      disconnect() {}
+    });
+    const node = mount({ city: "Miami", partner: "tt_test_example_key" });
+    await vi.waitFor(() => expect(calls).toHaveLength(1));
+    node.remove();
+    release(page([EVENT]));
+    await new Promise((r) => setTimeout(r, 30));
+    expect(shadow(node).querySelectorAll("li")).toHaveLength(0);
+    expect(observers).toBe(0);
+    expect(beacons).toHaveLength(0);
+    expect(node.events).toEqual([]);
+  });
+
+  it("one malformed date leaves that card without a date; the list still shows", async () => {
+    respond = () => page([{ ...EVENT, id: "bad", date: "2026-13-45", display: { ...EVENT.display, date_label: undefined } }, { ...EVENT, id: "good" }]);
+    const node = mount({ city: "Miami", lang: "fr" });
+    await settled(node);
+    const root = shadow(node);
+    expect(root.querySelector("[role=alert]")).toBeNull();
+    expect(root.querySelectorAll("li")).toHaveLength(2);
+    expect(root.querySelector('[data-event-id="bad"] .meta')!.textContent).toBe("Sample Waterfront Stage, Miami");
+    expect(root.querySelector('[data-event-id="good"] .meta')!.textContent).toMatch(/14/);
+  });
+
+  it("a status named like an Object method gets no badge (own labels only)", async () => {
+    respond = () => page([{ ...EVENT, id: "x", status: "constructor" as Event["status"] }, { ...EVENT, id: "y", status: "toString" as Event["status"] }]);
+    const node = mount({ city: "Miami" });
+    await settled(node);
+    const root = shadow(node);
+    expect(root.querySelectorAll("li")).toHaveLength(2);
+    expect(root.querySelectorAll(".status")).toHaveLength(0);
+    expect(root.textContent).not.toContain("native code");
+  });
+
+  it("with a key, simulate is ignored, so tracking stays on", async () => {
+    const node = mount({ city: "Miami", partner: "tt_test_example_key", simulate: "sold_out" });
+    await settled(node);
+    expect(new URL(calls[0].url).searchParams.has("simulate")).toBe(false);
+    await vi.waitFor(() => expect(beacons.length).toBeGreaterThan(0));
+    expect((await signals())[0]).toMatchObject({ type: "impression", key: "tt_test_example_key" });
+  });
+
   it("a failed tracking call never breaks the list", async () => {
     vi.spyOn(navigator, "sendBeacon").mockImplementation(() => {
       throw new Error("blocked by an ad blocker");

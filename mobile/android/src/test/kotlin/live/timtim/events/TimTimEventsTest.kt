@@ -82,6 +82,39 @@ class TimTimEventsTest {
     }
 
     @Test
+    fun aPlainHttpBaseUrlIsRefusedExceptForLocalTesting() {
+        assertFailsWith<TimTimException.InsecureBaseUrl> { TimTimEvents(baseUrl = "http://api.timtim.live/v1") }
+        assertFailsWith<TimTimException.InsecureBaseUrl> { TimTimEvents(baseUrl = "ftp://api.timtim.live/v1") }
+        assertFailsWith<TimTimException.InsecureBaseUrl> { TimTimEvents(baseUrl = "not a url") }
+        TimTimEvents(baseUrl = "https://api.timtim.live/v1")
+        TimTimEvents(baseUrl = "http://localhost:3000/v1")
+        TimTimEvents(baseUrl = "http://127.0.0.1:3000/v1")
+        TimTimEvents(baseUrl = "http://10.0.2.2:3000/v1")
+    }
+
+    @Test
+    fun anEventIdIsAPathSegmentNotAFormValue() {
+        val fake = Fake { HttpResponse(404, emptyMap(), fixture("simulate-rate_limited.429.json")) }
+        runCatching { TimTimEvents("tt_test_example_key", transport = fake).event("a b/c%é+") }
+        assertEquals("https://api.timtim.live/v1/events/a%20b%2Fc%25%C3%A9%2B", fake.seen.single().url)
+        assertEquals("evt_test-1", TimTimEvents.encodePathSegment("evt_test-1"))
+        assertEquals("%2E%2E", TimTimEvents.encodePathSegment(".."))
+    }
+
+    @Test
+    fun retryAfterReadsSecondsOrAnHttpDate() {
+        val now = java.time.Instant.parse("2026-10-21T07:28:00Z")
+        assertEquals(30, TimTimEvents.retryAfterSeconds("30", now))
+        assertEquals(120, TimTimEvents.retryAfterSeconds("Wed, 21 Oct 2026 07:30:00 GMT", now))
+        assertEquals(0, TimTimEvents.retryAfterSeconds("Wed, 21 Oct 2026 07:27:00 GMT", now))
+        assertNull(TimTimEvents.retryAfterSeconds("soon", now))
+        assertNull(TimTimEvents.retryAfterSeconds(null, now))
+        val fake = Fake { HttpResponse(429, mapOf("retry-after" to "Wed, 21 Oct 2099 07:28:00 GMT"), fixture("simulate-rate_limited.429.json")) }
+        val e = assertFailsWith<TimTimException.Api> { TimTimEvents(transport = fake).events() }
+        assertTrue((e.retryAfter ?: 0) > 0)
+    }
+
+    @Test
     fun trackSendsAPublicKeyAndNeverThrows() {
         val fake = Fake { HttpResponse(204, emptyMap(), "") }
         val ok = TimTimEvents("tt_pk_live_example_key", transport = fake).track(TimTimEvents.Signal.EVENT_CLICK, eventId = "evt_1", view = "pv_12345678")
