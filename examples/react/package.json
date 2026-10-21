@@ -12,7 +12,7 @@
   "dependencies": {
     "@timtim-live/react": "^0.1.0",
     "react": "^19.2.0",
-    "react-dom": "^19.2.0"
+    "react-dom": "^19.3.1"
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^6.1.2",
